@@ -39,7 +39,7 @@ for probe in probe_list:
     data = {"definitions": [
         {
             "target": dest['address_v4'],
-            "description": "Traceroute to {}".format(dest['address_v4']),
+            "description": "Traceroute to probe {}".format(dest['id']),
             "type": "traceroute",
             "protocol": "ICMP",
             "af": 4,
