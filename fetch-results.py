@@ -37,8 +37,9 @@ for msm in msm_list:
     request.add_header("Accept", "application/json")
     try:
         conn = urllib2.urlopen(request)
-        result = json.load(conn)
-        result_list.append(result)
+        msm_data = json.load(conn)
+        for result in msm_data:
+            result_list.append(result)
         conn.close()
     except urllib2.HTTPError as e:
         print >> sys.stderr, ("Fatal error: %s" % e.read())
