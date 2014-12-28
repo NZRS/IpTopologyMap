@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>NZ IP Topology Test</title>
+<style>
+@import url(styles/style.css);
+
+.node {
+  stroke: #fff;
+  stroke-width: 1.5px;
+}
+
+.link {
+  fill: none;
+  stroke: #000;
+  stroke-width: 1.5px;
+  opacity: 0.4;
+  marker-end: url(#end-arrow);
+}
+
+</style>
+</head>
+<body>
+<h2>NZ IP Topology derived from RIPE Atlas measurements</h2>
+<script src="scripts/d3.js"></script>
+<script src="scripts/cola.v3.min.js"></script>
+    <!--<script src="../src/adaptor.js"></script>-->
+<script>
+    var width = 1200,
+        height = 800;
+
+    var color = d3.scale.category10();
+
+    var d3cola = cola.d3adaptor()
+        .avoidOverlaps(true)
+        .size([width, height]);
+
+    var svg = d3.select("body").append("svg")
+        .attr("width", width)
+        .attr("height", height);
+
+    d3.json("data/graph.json", function (error, graph) {
+        var nodeRadius = 5;
+
+        graph.nodes.forEach(function (v) { v.height = v.width = 2 * nodeRadius; });
+
+        d3cola
+            .nodes(graph.nodes)
+            .links(graph.links)
+            .symmetricDiffLinkLengths(6)
+            .start(10,20,20);
+
+        var path = svg.selectAll(".link")
+            .data(graph.links)
+          .enter().append('line')
+          .attr('class', 'link')
+          .style('stroke-width', function (d) { return Math.sqrt(d.value); });
+
+        var node = svg.selectAll(".node")
+            .data(graph.nodes)
+          .enter().append("circle")
+            .attr("class", "node")
+            .attr("r", nodeRadius)
+            .style("fill", function (d) { return color(d.group); })
+            .call(d3cola.drag);
+
+        node.append("title")
+            .text(function (d) { return d.name; });
+
+        d3cola.on("tick", function () {
+            path.attr("x1", function (d) { return d.source.x; })
+                .attr("y1", function (d) { return d.source.y; })
+                .attr("x2", function (d) { return d.target.x; })
+                .attr("y2", function (d) { return d.target.y; });
+
+            node.attr("cx", function (d) { return d.x; })
+                .attr("cy", function (d) { return d.y; });
+        });
+        // turn on overlap avoidance after first convergence
+        //cola.on("end", function () {
+        //    if (!cola.avoidOverlaps()) {
+        //        graph.nodes.forEach(function (v) {
+        //            v.width = v.height = 10;
+        //        });
+        //        cola.avoidOverlaps(true);
+        //        cola.start();
+        //    }
+        //});
+    });
+
+    function isIE() { return ((navigator.appName == 'Microsoft Internet Explorer') || ((navigator.appName == 'Netscape') && (new RegExp("Trident/.*rv:([0-9]{1,}[\.0-9]{0,})").exec(navigator.userAgent) != null))); }
+</script>
+</body>
+</html>
