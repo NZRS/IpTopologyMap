@@ -5,7 +5,7 @@
         <script src="/scripts/cytoscape.js"></script>
     </head>
     <body>
-    <div id="cy"></div>
+    <div id="cy" style="height: 800px; width: 2400px;"></div>
     <script>
         $.ajax({
             dataType: "json",
@@ -22,7 +22,7 @@
                     .selector('edge')
                       .css({
                         'target-arrow-shape': 'triangle',
-                        'width': 4,
+                        'width': 2,
                         'line-color': '#ddd',
                         'target-arrow-color': '#ddd'
                       })
@@ -35,32 +35,21 @@
                         'transition-duration': '0.5s'
                       }),
 
-                  elements: {
-                      nodes: [
-                        { data: { id: 'a', name: 'Arthur' } },
-                        { data: { id: 'b' } },
-                        { data: { id: 'c' } },
-                        { data: { id: 'd' } },
-                        { data: { id: 'e' } }
-                      ],
-
-                      edges: [
-                        { data: { id: 'ae', weight: 1, source: 'a', target: 'e' } },
-                        { data: { id: 'ab', weight: 3, source: 'a', target: 'b' } },
-                        { data: { id: 'be', weight: 4, source: 'b', target: 'e' } },
-                        { data: { id: 'bc', weight: 5, source: 'b', target: 'c' } },
-                        { data: { id: 'ce', weight: 6, source: 'c', target: 'e' } },
-                        { data: { id: 'cd', weight: 2, source: 'c', target: 'd' } },
-                        { data: { id: 'de', weight: 7, source: 'd', target: 'e' } },
-                        { data: { id: 'de', weight: 5, source: 'c', target: 'd' }}
-                      ]
-                    },
+                  elements: data,
 
                   layout: {
-                    name: 'breadthfirst',
+                    name: 'concentric',
                     directed: true,
-                    roots: '#a',
-                    padding: 20
+                    animate: true,
+                    animationDuration: 1000,
+                    avoidOverlap: true,
+                    concentric: function() {
+                        return this.degree();
+                    },
+                    levelWidth: function(nodes) {
+                        return 0.2;
+                    },
+                    padding: 10
                   }
                 });
             }
