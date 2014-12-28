@@ -16,6 +16,7 @@ def read_auth(filename):
 
 parser = argparse.ArgumentParser("Retrieves traceroute results")
 parser.add_argument('--datadir', required=True, help="directory to save output")
+parser.add_argument('--msm', required=False, type=int, help="Fetch specific measurement id")
 args = parser.parse_args()
 
 if not os.path.exists(args.datadir):
@@ -27,12 +28,16 @@ if authkey is None:
     print "Auth file not found, aborting"
     sys.exit(1)
 
-with open("{}/measurements.json".format(args.datadir), "rb") as msm_file:
-    msm_list = json.load(msm_file)
+if not args.msm:
+    with open("{}/measurements.json".format(args.datadir), "rb") as msm_file:
+        msm_list = json.load(msm_file)
+else:
+    msm_list = [args.msm]
 
 result_list = []
 for msm in msm_list:
-    api_url = "https://atlas.ripe.net/api/v1/measurement/{}/result/?key={}".format(msm[0], authkey)
+    print "Fetching results for measurement %s" % msm
+    api_url = "https://atlas.ripe.net/api/v1/measurement/{}/result/?key={}".format(msm, authkey)
     request = urllib2.Request(api_url)
     request.add_header("Accept", "application/json")
     try:
