@@ -63,7 +63,8 @@ for probe in probe_list:
         results = json.load(conn)
         print results
         print req_data
-        msm_list.append([m for m in results['measurements']])
+        for m in results['measurements']:
+            msm_list.append(m)
         conn.close()
         time.sleep(3)
     except urllib2.HTTPError as e:
