@@ -1,3 +1,5 @@
+#!/usr/bin/python
+
 __author__ = 'secastro'
 
 import json
@@ -7,7 +9,20 @@ import networkx as nx
 import ipaddr
 from collections import defaultdict
 import re
+import GeoIP
+import itertools
 
+
+probe_addr = dict()
+g = GeoIP.open("data/GeoIPASNum.dat", GeoIP.GEOIP_STANDARD)
+
+# Preload a list of known network that are not in the routing table
+with open('data/known-networks.json', 'rb') as net_file:
+    known_net = json.load(net_file)
+
+    for prefix in known_net:
+        # Replace the member with the object that represents an IPv4Network
+        prefix['net'] = ipaddr.IPv4Network(prefix['net'])
 
 def name_hop(node, probe_id, seq):
     if node == "unknown_hop":
@@ -22,15 +37,40 @@ def name_hop(node, probe_id, seq):
         return node
 
 
-def group_from_name(node):
-    if re.search('^Hop', node):
-        return 3
-    elif re.search('^Private', node):
-        return 2
-    elif re.search('^Probe', node):
-        return 1
+def org_from_addr(a):
+    """
+    :type a: string
+    :param a: string
+    :return: string
+    """
+    org = g.org_by_name(a)
+    if org is not None:
+        return org.split(' ')[0]
     else:
-        return 4
+        # Last attempt to look into the list of networks we know
+        for prefix in known_net:
+            if ipaddr.IPv4Address(a) in prefix['net']:
+                return prefix['group']
+
+        # Last resort
+        return "UNK"
+
+
+def class_from_name(node):
+    if re.search('^Hop', node):
+        return [3, "X0"]
+    elif re.search('^Private', node):
+        return [2, "Priv"]
+    elif re.search('^Probe', node):
+        org = org_from_addr(probe_addr[node])
+        return [1, org]
+    else:
+        try:
+            if ipaddr.IPv4Address(node).version == 4:
+                org = org_from_addr(node)
+                return [4, org]
+        except ipaddr.AddressValueError:
+            return [4, "UNK"]
 
 
 parser = argparse.ArgumentParser("Analyses results")
@@ -48,11 +88,13 @@ nodes = set()
 edges = []
 
 node_hops = defaultdict(set)
+unknown_addr = set()
 
 for res in res_blob:
     sagan_res = TracerouteResult(res)
 
     print "Source = {}".format(sagan_res.source_address)
+    print "Origin = {}".format(sagan_res.origin)
     addr_list.add(sagan_res.source_address)
     print "Destination = {}".format(sagan_res.destination_address)
     print "Hops = {}".format(sagan_res.total_hops)
@@ -80,34 +122,81 @@ for res in res_blob:
         clean_ip_path.insert(0, addr_in_hop_list)
 
     clean_ip_path.insert(0, ["Probe %s" % sagan_res.probe_id])
-    # clean_ip_path now contains a sanitized version of the IP path
-    for i in range(1, len(clean_ip_path)):
-        for s in clean_ip_path[i - 1]:
-            for d in clean_ip_path[i]:
-                new_s = name_hop(s, sagan_res.probe_id, i-1)
-                new_d = name_hop(d, sagan_res.probe_id, i)
-                G.add_edge(new_s, new_d)
-                node_hops[new_s].add(i-1)
-                node_hops[new_d].add(i)
+    probe_addr["Probe %s" % sagan_res.probe_id] = sagan_res.origin
 
-# Add the degree to each node to prepare the layout later
-for node_id, node_degree in G.degree_iter():
-    G.node[node_id]['degree'] = max(node_hops.get(node_id))
-    # G.node[node_id]['degree'] = node_degree
+    # Identify the AS corresponding to each hop
+    node_path = []
+    # print "** PATH with errors"
+    for i in range(0, len(clean_ip_path)):
+        hop_elem = []
+        for h in clean_ip_path[i]:
+            name = name_hop(h, sagan_res.probe_id, i)
+            [_c, grp] = class_from_name(name)
+            if grp == 'UNK':
+                unknown_addr.add(name)
+            hop_elem.append(dict(name=name, _class=_c, group=grp))
+            # print h, name, grp
+        node_path.append(hop_elem)
+
+    # Fill up the gaps where the AS obtained is not public
+    last_good = dict(group=None, idx=0)
+    invalid_in_path = False
+    for i in range(0, len(node_path)):
+        for hop in node_path[i]:
+            if hop['group'][0:2] == "AS":
+                if invalid_in_path and hop['group'] == last_good['group']:
+                    # Repair the sequence between here and the last good
+                    # print "** Attempting to repair index %s -> %s" % (last_good['idx']+1, i-1)
+                    for j in range(last_good['idx']+1, i):
+                        for hop_elem in node_path[j]:
+                            # print "-- Changing %s by %s" % (hop_elem['group'], hop['group'])
+                            if hop_elem['group'] in ['X0', 'Priv']:
+                                hop_elem['group'] = hop['group']
+                    invalid_in_path = False
+                last_good = dict(group=hop['group'], idx=i)
+            elif hop['group'] in ['X0', 'Priv']:
+                invalid_in_path = True
+
+    # print "** Cleaned path"
+    clean_path = []
+    unclean_path = False
+    for n in node_path:
+        for hop in n:
+            clean_path.append([hop['name'], hop['group']])
+            if hop['group'] in ['X0', 'Priv']:
+                unclean_path = True
+            # print hop['name'], hop['group']
+
+    if unclean_path:
+        for n1, n2 in itertools.izip(node_path, clean_path):
+            print "{name:>20}  {group:>8}".format(**n1[0]), " | ", "{0[0]:>20}  {0[1]:>8}".format(n2)
+
+    # clean_ip_path now contains a sanitized version of the IP path
+    for i in range(1, len(node_path)):
+        for s in node_path[i - 1]:
+            for d in node_path[i]:
+                G.add_edge(s['name'], d['name'])
+                G.node[s['name']]['group'] = s['group']
+                G.node[d['name']]['group'] = d['group']
+                G.node[s['name']]['_class'] = s['_class']
+                G.node[d['name']]['_class'] = d['_class']
 
 with open("{}/addresses.json".format(args.datadir), 'wb') as addr_file:
     json.dump(list(addr_list), addr_file)
-
-# for key, value in node_hops.iteritems():
-#     print key, value
 
 with open("{}/graph.json".format(args.datadir), 'wb') as graph_file:
     node_idx = dict()
     node_list = []
     idx = 0
+    groups = defaultdict(list)
     for n in G.nodes_iter():
-        node_list.append(dict(name=n, degree=G.node[n]['degree'], group=group_from_name(n)))
+        node_list.append(dict(name=n, _class=G.node[n]['_class'], group=G.node[n]['group']))
         node_idx[n] = idx
+        groups[G.node[n]['group']].append(idx)
         idx += 1
     json.dump(dict(links=[dict(source=node_idx[s], target=node_idx[t], weight=1) for s, t in G.edges_iter()],
-                   nodes=node_list), graph_file)
+                   nodes=node_list,
+                   groups=[dict(leaves=m, name=grp, padding=10) for grp, m in groups.iteritems()]), graph_file)
+
+with open("unmappable-addresses.txt", "wb") as unk_addr_file:
+    unk_addr_file.writelines([addr + "\n" for addr in sorted(unknown_addr)])
