@@ -46,6 +46,8 @@ for probe in probe_list:
             "description": "Traceroute to probe {}".format(probe['id']),
             "type": "traceroute",
             "protocol": "ICMP",
+            "paris": 32
+            ,
             "af": 4,
             "is_oneoff": True,
             "can_visualize": False,
