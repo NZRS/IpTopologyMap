@@ -1,0 +1,27 @@
+{
+    "180000": {
+        "country": "NZ",
+        "short_descr": "Megaport AKL",
+        "long_descr": "Megaport Auckland NZ"
+    },
+    "180001": {
+        "country": "NZ",
+        "short_descr": "AKL-IX",
+        "long_descr": "Auckland Internet Exchange"
+    },
+    "180002": {
+        "country": "US",
+        "short_descr": "CoreSite CA",
+        "long_descr": "CoreSite Any2 California"
+    },
+    "180003": {
+        "country": "US",
+        "short_descr": "PAIX",
+        "long_descr": "Palo Alto IX"
+    },
+    "180010": {
+        "country": "AU",
+        "short_descr": "Equinix SYD",
+        "long_descr": "Equinix Sydney"
+    },
+}
