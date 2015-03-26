@@ -6,8 +6,14 @@ from collections import defaultdict
 from networkx.readwrite import json_graph
 from time import strftime, localtime
 from asn_name_lookup import AsnNameLookupService
+import argparse
 
-with open('data/test_009/bgp.json', 'rb') as bgp_file:
+parser = argparse.ArgumentParser("Prepare graph file for visualization")
+parser.add_argument('--datadir', required=True, help="directory to read input and save output")
+args = parser.parse_args()
+
+
+with open("{}/bgp.json".format(args.datadir), 'rb') as bgp_file:
     map_data = json.load(bgp_file)
     print json.dumps(map_data, indent=2)
     # bgp_map = nx.Graph(map_data)
@@ -60,5 +66,5 @@ json_dump['lastupdate'] = strftime("%B %d, %Y", localtime())
 del json_dump['links']
 
 
-with open('data/test_009/bgp.alchemy.json', 'wb') as alchemy_file:
+with open("{}/bgp.alchemy.json".format(args.datadir), 'wb') as alchemy_file:
     json.dump(json_dump, alchemy_file)
