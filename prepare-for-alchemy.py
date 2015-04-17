@@ -7,9 +7,11 @@ from networkx.readwrite import json_graph
 from time import strftime, localtime
 from asn_name_lookup import AsnNameLookupService
 import argparse
+from as_relationship import AsRelationshipService
 
 parser = argparse.ArgumentParser("Prepare graph file for visualization")
 parser.add_argument('--datadir', required=True, help="directory to read input and save output")
+parser.add_argument('--relfile', required=True, help="File with AS relationship data")
 args = parser.parse_args()
 
 
@@ -53,11 +55,12 @@ json_dump = json_graph.node_link_data(bgp_map)
 for node in json_dump['nodes']:
     node['id'] = int(node['id'])
 
+s = AsRelationshipService([args.relfile])
 for link in json_dump['links']:
     link['_weight'] = 1
-    link['_class'] = 'unk'
     link['source'] = json_dump['nodes'][link['source']]['id']
     link['target'] = json_dump['nodes'][link['target']]['id']
+    link['_class'] = s.rel_char2class(s.find_rel(link['source'], link['target']))
 
 json_dump['edges'] = json_dump['links']
 json_dump['dr'] = degree_range
