@@ -11,6 +11,7 @@ from collections import defaultdict
 import re
 import GeoIP
 import itertools
+from networkx.readwrite import json_graph
 
 
 probe_addr = dict()
@@ -45,7 +46,7 @@ def org_from_addr(a):
     """
     org = g.org_by_name(a)
     if org is not None:
-        return org.split(' ')[0]
+        return org.split(' ')[0][2:]
     else:
         # Last attempt to look into the list of networks we know
         for prefix in known_net:
@@ -73,6 +74,10 @@ def class_from_name(node):
             return [4, "UNK"]
 
 
+def invalid_group(g):
+    return g in ['UNK', 'X0', 'Priv']
+
+
 parser = argparse.ArgumentParser("Analyses results")
 parser.add_argument('--datadir', required=True, help="directory to read input and save output")
 args = parser.parse_args()
@@ -84,6 +89,7 @@ with open(res_file, 'rb') as res_fd:
     res_blob = json.load(res_fd)
 
 G = nx.Graph()
+bgp = nx.Graph()
 nodes = set()
 edges = []
 
@@ -138,12 +144,12 @@ for res in res_blob:
             # print h, name, grp
         node_path.append(hop_elem)
 
-    # Fill up the gaps where the AS obtained is not public
+    # Fill up the gaps where the AS obtained is not available
     last_good = dict(group=None, idx=0)
     invalid_in_path = False
     for i in range(0, len(node_path)):
         for hop in node_path[i]:
-            if hop['group'][0:2] == "AS":
+            if not invalid_group(hop['group']):
                 if invalid_in_path and hop['group'] == last_good['group']:
                     # Repair the sequence between here and the last good
                     # print "** Attempting to repair index %s -> %s" % (last_good['idx']+1, i-1)
@@ -154,28 +160,34 @@ for res in res_blob:
                                 hop_elem['group'] = hop['group']
                     invalid_in_path = False
                 last_good = dict(group=hop['group'], idx=i)
-            elif hop['group'] in ['X0', 'Priv']:
+            else:
                 invalid_in_path = True
 
-    # print "** Cleaned path"
+    # Third iteration
+    # If there are still groups not determined, there is not much we can do to guess them,
+    # so we extend the last good group to cover for those
+    last_good_group = None
     clean_path = []
-    unclean_path = False
-    for n in node_path:
-        for hop in n:
+    for i in range(0, len(node_path)):
+        for hop in node_path[i]:
             clean_path.append([hop['name'], hop['group']])
-            if hop['group'] in ['X0', 'Priv']:
-                unclean_path = True
-            # print hop['name'], hop['group']
+            if invalid_group(hop['group']):
+                print "Pass3: Replace %s by %s" % (hop['group'], last_good_group)
+                hop['group'] = last_good_group
+            else:
+                last_good_group = hop['group']
 
-    if unclean_path:
-        for n1, n2 in itertools.izip(node_path, clean_path):
-            print "{name:>20}  {group:>8}".format(**n1[0]), " | ", "{0[0]:>20}  {0[1]:>8}".format(n2)
 
-    # clean_ip_path now contains a sanitized version of the IP path
+    for n1, n2 in itertools.izip(node_path, clean_path):
+        print "{name:>20}  {group:>8}".format(**n1[0]), " | ", "{0[0]:>20}  {0[1]:>8}".format(n2)
+
+    """node_path now contains a sanitized version of the IP path"""
     for i in range(1, len(node_path)):
         for s in node_path[i - 1]:
             for d in node_path[i]:
                 G.add_edge(s['name'], d['name'])
+                if s['group'] != d['group']:
+                    bgp.add_edge(s['group'], d['group'])
                 G.node[s['name']]['group'] = s['group']
                 G.node[d['name']]['group'] = d['group']
                 G.node[s['name']]['_class'] = s['_class']
@@ -198,5 +210,15 @@ with open("{}/graph.json".format(args.datadir), 'wb') as graph_file:
                    nodes=node_list,
                    groups=[dict(leaves=m, name=grp, padding=10) for grp, m in groups.iteritems()]), graph_file)
 
-with open("unmappable-addresses.txt", "wb") as unk_addr_file:
+# Save a version in GraphML for gephi
+nx.write_graphml(bgp, "{}/bgp.graphml".format(args.datadir))
+
+# Save a version in graphJSON for Alchemy
+with open("{}/bgp.json".format(args.datadir), 'wb') as bgp_json_file:
+    json.dump(json_graph.node_link_data(bgp), bgp_json_file)
+
+with open("{}/as-list.txt".format(args.datadir), 'wb') as as_list_file:
+    as_list_file.writelines(["{0}\n".format(n) for n in bgp.nodes_iter()])
+
+with open("{}/unmappable-addresses.txt".format(args.datadir), "wb") as unk_addr_file:
     unk_addr_file.writelines([addr + "\n" for addr in sorted(unknown_addr)])
