@@ -29,6 +29,12 @@
         "short_descr": "IX AU SA",
         "long_descr": "IX Australia SA"
     },
+    "180006": {
+        "country": "IX",
+        "short_descr": "Megaport VIC",
+        "long_descr": "Megaport Melbourne"
+    },
+
 
     "180010": {
         "country": "IX",
