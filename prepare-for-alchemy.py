@@ -17,7 +17,6 @@ args = parser.parse_args()
 
 with open("{}/bgp.json".format(args.datadir), 'rb') as bgp_file:
     map_data = json.load(bgp_file)
-    print json.dumps(map_data, indent=2)
     # bgp_map = nx.Graph(map_data)
     bgp_map = json_graph.node_link_graph(map_data)
 
