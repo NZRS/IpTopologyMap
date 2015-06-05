@@ -12,6 +12,7 @@ import re
 import GeoIP
 import itertools
 from networkx.readwrite import json_graph
+from reverse_lookup import ReverseLookupService
 
 
 probe_addr = dict()
@@ -84,6 +85,7 @@ args = parser.parse_args()
 
 addr_list = set()
 res_file = "{}/results.json".format(args.datadir)
+ip_path_list = []
 
 with open(res_file, 'rb') as res_fd:
     res_blob = json.load(res_fd)
@@ -95,12 +97,14 @@ edges = []
 
 node_hops = defaultdict(set)
 unknown_addr = set()
+address_to_lookup = set()
 
 for res in res_blob:
     sagan_res = TracerouteResult(res)
 
     print "Source = {}".format(sagan_res.source_address)
     print "Origin = {}".format(sagan_res.origin)
+    address_to_lookup.add(sagan_res.origin)
     addr_list.add(sagan_res.source_address)
     print "Destination = {}".format(sagan_res.destination_address)
     print "Hops = {}".format(sagan_res.total_hops)
@@ -141,6 +145,7 @@ for res in res_blob:
             if grp == 'UNK':
                 unknown_addr.add(name)
             hop_elem.append(dict(name=name, _class=_c, group=grp))
+            address_to_lookup.add(name)
             # print h, name, grp
         node_path.append(hop_elem)
 
@@ -177,9 +182,9 @@ for res in res_blob:
             else:
                 last_good_group = hop['group']
 
-
     for n1, n2 in itertools.izip(node_path, clean_path):
         print "{name:>20}  {group:>8}".format(**n1[0]), " | ", "{0[0]:>20}  {0[1]:>8}".format(n2)
+        ip_path_list.append([n1[0]['name'], n1[0]['group']])
 
     """node_path now contains a sanitized version of the IP path"""
     for i in range(1, len(node_path)):
@@ -193,22 +198,35 @@ for res in res_blob:
                 G.node[s['name']]['_class'] = s['_class']
                 G.node[d['name']]['_class'] = d['_class']
 
+print "Looking up reverse entries, might take a while"
+s = ReverseLookupService()
+address_info = s.lookup_many(address_to_lookup)
+
+with open("{}/ip-path.json".format(args.datadir), 'wb') as ip_path_file:
+    json.dump(["{0:>20} {1:>40} {2:>8}".format(elem[0], address_info[elem[0]]['name'], elem[1]) for elem in ip_path_list], ip_path_file, indent=2)
+
 with open("{}/addresses.json".format(args.datadir), 'wb') as addr_file:
     json.dump(list(addr_list), addr_file)
 
+node_list = []
 with open("{}/graph.json".format(args.datadir), 'wb') as graph_file:
     node_idx = dict()
-    node_list = []
     idx = 0
     groups = defaultdict(list)
     for n in G.nodes_iter():
-        node_list.append(dict(name=n, _class=G.node[n]['_class'], group=G.node[n]['group']))
+        node_list.append({'name': n, 'label': n, 'id': n, '_class': G.node[n]['_class'], 'group': G.node[n]['group']})
         node_idx[n] = idx
         groups[G.node[n]['group']].append(idx)
         idx += 1
     json.dump(dict(links=[dict(source=node_idx[s], target=node_idx[t], weight=1) for s, t in G.edges_iter()],
                    nodes=node_list,
                    groups=[dict(leaves=m, name=grp, padding=10) for grp, m in groups.iteritems()]), graph_file)
+
+with open("{}/ip-network-graph.js".format(args.datadir), "wb") as graph_file:
+    graph_file.write("var nodes = {};\n".format(json.dumps(node_list)))
+    edge_list = [{'to': t, 'from': s, 'width': 1} for s, t in G.edges_iter()]
+    graph_file.write("var edges = {};\n".format(json.dumps(edge_list)))
+
 
 # Save a version in GraphML for gephi
 nx.write_graphml(bgp, "{}/bgp.graphml".format(args.datadir))
