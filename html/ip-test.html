@@ -8,11 +8,18 @@
       height: 800px;
       border: 1px solid lightgray;
     }
+    #config {
+      float:left;
+      width: 400px;
+      height: 600px;
+    }
+
     </style>
-<
 </head>
 <body>
+    <input type="button" onclick="clusterByAs()" value="Cluster all nodes By AS"> <br />
     <div id="ipvis"></div>
+    <div id="config"></div>
 
     <script src="/scripts/vis.min.js"></script>
     <script src="/misc/data/ip-network-graph.js"></script>
@@ -20,6 +27,11 @@
     <script type="text/javascript">
         var vis_nodes = new vis.DataSet(nodes);
         var vis_edges = new vis.DataSet(edges);
+        var lastClusterZoomLevel = 0;
+        var clusterFactor = 0.9;
+        var clusterIndex = 0;
+        var clusters = [];
+
 
         var container = document.getElementById('ipvis');
         var options = {
@@ -27,7 +39,9 @@
             width: '100%',
             height: '100%',
             nodes: {
-                shape: 'dot'
+                shape: 'dot',
+                size: 5,
+                physics: true
             },
             edges: {
                 smooth: false
@@ -35,11 +49,71 @@
             interaction: {
                 navigationButtons: true,
                 zoomView: true
+            },
+            physics: {
+                stabilization: false
+            },
+            configure: {
+                enabled: true,
+                filter: "physics",
+                container: document.getElementById('config')
             }
         };
 
         var data = {nodes:vis_nodes, edges: vis_edges}
         var network = new vis.Network(container, data, options);
+
+        // set the first initial zoom level
+        /*
+        network.once('initRedraw', function() {
+            clusterByAs();
+        });
+        */
+
+        // we use the zoom event for our clustering
+        network.on('zoom', function (params) {
+            if (params.direction == '-') {
+                if (params.scale < lastClusterZoomLevel*clusterFactor) {
+                    makeClusters(params.scale);
+                    lastClusterZoomLevel = params.scale;
+                }
+            }
+            else {
+                openClusters(params.scale);
+            }
+        });
+
+        // if we click on a node, we want to open it up!
+        network.on("selectNode", function (params) {
+            if (params.nodes.length == 1) {
+                if (network.isCluster(params.nodes[0]) == true) {
+                    network.openCluster(params.nodes[0])
+                }
+            }
+        });
+
+        function clusterByAs() {
+          network.setData(data);
+          var clusterOptionsByData;
+          for (var i = 0; i < ases.length; i++) {
+              var as = ases[i];
+              clusterOptionsByData = {
+                  joinCondition: function (childOptions) {
+                      return childOptions.AS == as; // The AS is a property of the node
+                  },
+                  processProperties: function (clusterOptions, childNodes, childEdges) {
+                      var totalMass = 0;
+                      for (var i = 0; i < childNodes.length; i++) {
+                          totalMass += childNodes[i].mass;
+                      }
+                      clusterOptions.mass = totalMass;
+                      return clusterOptions;
+                  },
+                  clusterNodeProperties: {id: as, borderWidth: 3, shape: 'circle', label: 'AS ' + as}
+              }
+              network.cluster(clusterOptionsByData);
+          }
+        }
     </script>
 </body>
 </html>
