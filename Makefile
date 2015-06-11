@@ -16,11 +16,14 @@ ${DATADIR}/measurements.json: data/probes.json data/nz-dest-addr.json data/known
 ${DATADIR}/results.json: ${DATADIR}/measurements.json
 	python fetch-results.py --datadir ${DATADIR}
 
-${DATADIR}/bgp.json ${DATADIR}/ip-network-graph.js: ${DATADIR}/results.json data/known-networks.json analyze-results.py
-	python analyze-results.py --datadir ${DATADIR}
+${DATADIR}/bgp.json ${DATADIR}/ip.json: ${DATADIR}/results.json data/known-networks.json analyze-results.py
+	python analyze-results.py --datadir ${DATADIR} --sample
 
 ${DATADIR}/bgp.alchemy.json: prepare-for-alchemy.py ${DATADIR}/bgp.json
 	python prepare-for-alchemy.py --datadir ${DATADIR} --relfile data/$(REL_DAY).as-rel.txt
+
+${DATADIR}/ip-network-graph.js: ${DATADIR}/ip.json alchemy2vis.py
+	python alchemy2vis.py --datadir ${DATADIR}
 
 deploy-data: ${DATADIR}/bgp.alchemy.json
 	rsync -a ${DATADIR}/bgp.alchemy.json /var/www/misc/data/nz-ip-map.json

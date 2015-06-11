@@ -13,6 +13,7 @@ import GeoIP
 import itertools
 from networkx.readwrite import json_graph
 from reverse_lookup import ReverseLookupService
+import random
 
 
 probe_addr = dict()
@@ -81,6 +82,7 @@ def invalid_group(g):
 
 parser = argparse.ArgumentParser("Analyses results")
 parser.add_argument('--datadir', required=True, help="directory to read input and save output")
+parser.add_argument('--sample', help="Use a sample instead of all traces available", action="store_true")
 args = parser.parse_args()
 
 addr_list = set()
@@ -89,6 +91,9 @@ ip_path_list = []
 
 with open(res_file, 'rb') as res_fd:
     res_blob = json.load(res_fd)
+
+    if args.sample:
+        res_blob = random.sample(res_blob, 100)
 
 G = nx.Graph()
 bgp = nx.Graph()
@@ -227,6 +232,9 @@ with open("{}/ip-network-graph.js".format(args.datadir), "wb") as graph_file:
     edge_list = [{'to': t, 'from': s, 'width': 1} for s, t in G.edges_iter()]
     graph_file.write("var edges = {};\n".format(json.dumps(edge_list)))
 
+# Save a version of IP graph in graphJSON
+with open("{}/ip.json".format(args.datadir), 'wb') as ip_json_file:
+    json.dump(json_graph.node_link_data(G), ip_json_file)
 
 # Save a version in GraphML for gephi
 nx.write_graphml(bgp, "{}/bgp.graphml".format(args.datadir))
