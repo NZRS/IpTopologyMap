@@ -5,11 +5,12 @@
     <title>VisJS IP topology test</title>
     <style type="text/css">
     #ipvis {
-      height: 800px;
+      height: 600px;
+      width: 1200px;
       border: 1px solid lightgray;
     }
     #config {
-      float:left;
+      float: left;
       width: 400px;
       height: 600px;
     }
@@ -51,7 +52,12 @@
                 zoomView: true
             },
             physics: {
-                stabilization: false
+                "stabilization": false,
+                "barnesHut": {
+                    "gravitationalConstant": -1250,
+                    "damping": 0.13,
+                    "avoidOverlap": 0.1
+                }
             },
             configure: {
                 enabled: true,
@@ -62,32 +68,37 @@
 
         var data = {nodes:vis_nodes, edges: vis_edges}
         var network = new vis.Network(container, data, options);
+        clusterByAs();
 
-        // set the first initial zoom level
         /*
         network.once('initRedraw', function() {
             clusterByAs();
         });
         */
 
-        // we use the zoom event for our clustering
-        network.on('zoom', function (params) {
-            if (params.direction == '-') {
-                if (params.scale < lastClusterZoomLevel*clusterFactor) {
-                    makeClusters(params.scale);
-                    lastClusterZoomLevel = params.scale;
-                }
-            }
-            else {
-                openClusters(params.scale);
-            }
-        });
-
         // if we click on a node, we want to open it up!
         network.on("selectNode", function (params) {
             if (params.nodes.length == 1) {
                 if (network.isCluster(params.nodes[0]) == true) {
                     network.openCluster(params.nodes[0])
+                } else {
+                    var as = data.nodes._data[params.nodes[0]].AS;
+                    console.log("Clustering nodes in AS " + as);
+                    clusterOptionsByData = {
+                      joinCondition: function (childOptions) {
+                          return network.isCluster(params.nodes[0]) || childOptions.AS == as; // Cluster the nodes matching this AS
+                      },
+                      processProperties: function (clusterOptions, childNodes, childEdges) {
+                          var totalMass = 0;
+                          for (var i = 0; i < childNodes.length; i++) {
+                              totalMass += childNodes[i].mass;
+                          }
+                          clusterOptions.mass = totalMass;
+                          return clusterOptions;
+                      },
+                      clusterNodeProperties: {id: as, borderWidth: 3, shape: 'circle', label: 'AS ' + as}
+                    }
+                    network.cluster(clusterOptionsByData);
                 }
             }
         });
