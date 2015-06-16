@@ -3,6 +3,8 @@ DATADIR ?= data
 
 all: ${DATADIR}/bgp.alchemy.json
 
+analytics: ${DATADIR}/expanded-ip-path.json
+
 data/$(REL_DAY).as-rel.txt:
 	wget -O - http://data.caida.org/datasets/as-relationships/serial-1/$(REL_DAY).as-rel.txt.bz2 | bzip2 -cd > $@_
 	mv $@_ $@
@@ -16,14 +18,17 @@ ${DATADIR}/measurements.json: data/probes.json data/nz-dest-addr.json data/known
 ${DATADIR}/results.json: ${DATADIR}/measurements.json
 	python fetch-results.py --datadir ${DATADIR}
 
-${DATADIR}/bgp.json ${DATADIR}/ip.json: ${DATADIR}/results.json data/known-networks.json analyze-results.py
-	python analyze-results.py --datadir ${DATADIR} --sample
+${DATADIR}/bgp.json ${DATADIR}/ip.json ${DATADIR}/ip-path.json: ${DATADIR}/results.json data/known-networks.json analyze-results.py
+	python analyze-results.py --datadir ${DATADIR}
 
 ${DATADIR}/bgp.alchemy.json: prepare-for-alchemy.py ${DATADIR}/bgp.json
 	python prepare-for-alchemy.py --datadir ${DATADIR} --relfile data/$(REL_DAY).as-rel.txt
 
 ${DATADIR}/ip-network-graph.js: ${DATADIR}/ip.json alchemy2vis.py
 	python alchemy2vis.py --datadir ${DATADIR}
+
+${DATADIR}/expanded-ip-path.json: path-analytics.py data/known-networks.json ${DATADIR}/ip-path.json
+	python path-analytics.py --datadir ${DATADIR}
 
 deploy-data: ${DATADIR}/bgp.alchemy.json
 	rsync -a ${DATADIR}/bgp.alchemy.json /var/www/misc/data/nz-ip-map.json

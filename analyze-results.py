@@ -93,7 +93,7 @@ with open(res_file, 'rb') as res_fd:
     res_blob = json.load(res_fd)
 
     if args.sample:
-        res_blob = random.sample(res_blob, 100)
+        res_blob = random.sample(res_blob, 1000)
 
 G = nx.Graph()
 bgp = nx.Graph()
@@ -187,9 +187,12 @@ for res in res_blob:
             else:
                 last_good_group = hop['group']
 
+    temp_path = []
     for n1, n2 in itertools.izip(node_path, clean_path):
         print "{name:>20}  {group:>8}".format(**n1[0]), " | ", "{0[0]:>20}  {0[1]:>8}".format(n2)
-        ip_path_list.append([n1[0]['name'], n1[0]['group']])
+        temp_path.append({'addr': n1[0]['name'], 'asn': n1[0]['group']})
+
+    ip_path_list.append({'responded': sagan_res.destination_ip_responded, 'path': temp_path})
 
     """node_path now contains a sanitized version of the IP path"""
     for i in range(1, len(node_path)):
@@ -203,12 +206,12 @@ for res in res_blob:
                 G.node[s['name']]['_class'] = s['_class']
                 G.node[d['name']]['_class'] = d['_class']
 
-print "Looking up reverse entries, might take a while"
-s = ReverseLookupService()
-address_info = s.lookup_many(address_to_lookup)
+# print "Looking up reverse entries, might take a while"
+# s = ReverseLookupService()
+# address_info = s.lookup_many(address_to_lookup)
 
 with open("{}/ip-path.json".format(args.datadir), 'wb') as ip_path_file:
-    json.dump(["{0:>20} {1:>40} {2:>8}".format(elem[0], address_info[elem[0]]['name'], elem[1]) for elem in ip_path_list], ip_path_file, indent=2)
+    json.dump(ip_path_list, ip_path_file, indent=2)
 
 with open("{}/addresses.json".format(args.datadir), 'wb') as addr_file:
     json.dump(list(addr_list), addr_file)
