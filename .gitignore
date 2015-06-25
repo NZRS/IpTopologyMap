@@ -1,3 +1,7 @@
 data/
 create-key.txt
 read-key.txt
+# Developing using PyCharm, don't include the local state
+.idea/
+# Using Bower for web components
+bower_components/
