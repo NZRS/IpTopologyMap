@@ -32,11 +32,11 @@ layout = VG.layout("kk", dim=2)
 
 vis_nodes = []
 vis_edges = []
-vis_ases = []
+vis_ases = set()
 for n in VG.vs:
-    vis_nodes.append({'id': n['name'], 'group': n['group'], 'title': '', 'AS': n['AS'],
+    vis_nodes.append({'id': n['name'], 'group': n['group'], 'title': '', 'AS': n['AS'], 'mass': 1,
                       'label': n['label'], 'x': 200*layout[n.index][0], 'y': 200*layout[n.index][1]})
-    vis_ases.append(n['AS'])
+    vis_ases.add(n['AS'])
 
 for e in VG.es:
     vis_edges.append({'to': VG.vs[e.target]['name'], 'from': VG.vs[e.source]['name']})
@@ -44,5 +44,5 @@ for e in VG.es:
 with open("{}/ip-network-graph.js".format(args.datadir), 'wb') as js_file:
     js_file.write("var nodes = {};\n".format(json.dumps(vis_nodes)))
     js_file.write("var edges = {};\n".format(json.dumps(vis_edges)))
-    js_file.write("var ases  = {};\n".format(json.dumps(vis_ases)))
+    js_file.write("var ases  = {};\n".format(json.dumps(list(vis_ases))))
 
