@@ -39,6 +39,9 @@
             autoResize: true,
             width: '100%',
             height: '100%',
+            layout: {
+                randomSeed: 8
+            },
             nodes: {
                 shape: 'dot',
                 size: 5,
@@ -52,10 +55,13 @@
                 zoomView: true
             },
             physics: {
-                "stabilization": false,
+                "stabilization": true,
                 "barnesHut": {
-                    "gravitationalConstant": -1250,
-                    "damping": 0.13,
+                    "gravitationalConstant": -17500,
+                    "centralGravity": 1.7,
+                    "springLength": 195,
+                    "springConstant": 0.05,
+                    "damping": 0.75,
                     "avoidOverlap": 0.1
                 }
             },
