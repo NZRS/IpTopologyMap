@@ -1,0 +1,29 @@
+{
+  "name": "nz-ip-topology",
+  "version": "0.1",
+  "authors": [
+    "Sebastian Castro <sebastian@nzrs.net.nz>"
+  ],
+  "description": "Using a large number of IP traceroute from RIPE Atlas, build an IP topology map of NZ",
+  "keywords": [
+    "RIPE",
+    "Atlas",
+    "network",
+    "topology",
+    "IP",
+    "NZ"
+  ],
+  "license": "AGPL-3",
+  "homepage": "http://ip.topology.map.nz",
+  "ignore": [
+    "**/.*",
+    "node_modules",
+    "bower_components",
+    "test",
+    "tests",
+    "data"
+  ],
+  "dependencies": {
+    "vis": "~4.3.0"
+  }
+}
