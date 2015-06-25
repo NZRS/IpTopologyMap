@@ -6,6 +6,7 @@ from collections import Counter
 import GeoIP
 import re
 from radix import Radix
+from operator import itemgetter
 
 dest_cc = 'NZ'
 unk_cc  = '*'
@@ -22,7 +23,8 @@ def get_country(addr, asn):
             return gi.country_code_by_addr(elem['addr'])
 
 def path2string(p):
-    return "\n".join(["{0:>6} {1:>10} {2}".format(e.get('country', '**'), e['asn'], e['addr']) for e in p])
+    return "\n".join(["{0:>6} {1:>10} {2:15} {3:.2f}".format(e.get('country', '++'), e['asn'], e['addr'], e['rtt']) for e in p])
+    # return "\n".join(["{country:>6} {asn:>10} {addr}".format(e) for e in p])
 
 
 rt = Radix()
@@ -57,6 +59,9 @@ for path in ip_path:
 
 
 deviated_cnt = Counter()
+common_deviated_target = Counter()
+deviated_path = []
+deviated_hops = []
 for path in ip_path:
     s = path['path'][0]
     t = path['path'][-1]
@@ -65,20 +70,32 @@ for path in ip_path:
         # Iterate the path and see if we depart from the destination country
         departed = False
         for hop in path['path']:
-            departed |= hop['country'] not in [dest_cc, unk_cc]
+            if hop['country'] not in [dest_cc, unk_cc]:
+                departed |= True
+                deviated_hops[hop['addr']] = dict((k, hop[k]) for k in hop.iterkeys() if k in ['country', 'AS'])
 
         path['departed'] = departed
         if departed:
             deviated_cnt['off-country'] += 1
-            print "=" * 20
-            print path2string(path['path'])
-            print "\n"
+            common_deviated_target[t['addr']] += 1
+            deviated_path.append(path2string(path['path']))
         else:
             deviated_cnt['in-country'] += 1
 
 with open("{}/expanded-ip-path.json".format(args.datadir), 'wb') as o_file:
     json.dump(ip_path, o_file, indent=2)
 
+with open("{}/deviated-hops.json".format(args.datadir), 'wb') as o_file:
+    json.dump(deviated_hops, o_file, indent=2)
+
+with open("{}/deviated-paths.txt".format(args.datadir), 'wb') as p_file:
+    p_file.writelines([l + "\n\n" for l in deviated_path])
+
+
+
 # print ip_path
 print completed
 print deviated_cnt
+print "Common target with deviated paths"
+for k, v in sorted(common_deviated_target.items(), key=itemgetter(1), reverse=True):
+    print k, v
