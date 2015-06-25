@@ -7,12 +7,11 @@ from ripe.atlas.sagan import TracerouteResult
 import argparse
 import networkx as nx
 import ipaddr
-from collections import defaultdict
+from collections import defaultdict, Counter
 import re
 import GeoIP
 import itertools
 from networkx.readwrite import json_graph
-from reverse_lookup import ReverseLookupService
 import random
 
 
@@ -116,12 +115,24 @@ for res in res_blob:
     print "Destination responded = {}".format(sagan_res.destination_ip_responded)
     last_hop_detected = False
     clean_ip_path = []
-    for ip_list in reversed(sagan_res.ip_path):
+    for hop in reversed(sagan_res.hops):
+        rtt_sum = Counter()
+        rtt_cnt = Counter()
+        rtt_avg = {}
+
+        for packet in hop.packets:
+            if packet.origin is None:
+                continue
+
+            if packet.rtt is not None:
+                rtt_sum[packet.origin] += packet.rtt
+                rtt_cnt[packet.origin] += 1
+
         addr_in_hop = set()
-        for ip in ip_list:
-            if ip is not None:
-                addr_list.add(ip)
-                addr_in_hop.add(ip)
+        for addr in rtt_cnt:
+            addr_list.add(addr)
+            addr_in_hop.add(addr)
+            rtt_avg[addr] = rtt_sum[addr] / rtt_cnt[addr]
 
         if len(addr_in_hop) == 0 and not last_hop_detected:
             # This is a hop that failed at the end of the path
@@ -131,25 +142,25 @@ for res in res_blob:
 
         # This hop was problematic, but it still part of the path
         if len(addr_in_hop) == 0:
-            addr_in_hop_list = ["unknown_hop"]
+            addr_in_hop_list = {'index': hop.index, 'hop_info': [{'addr': "unknown_hop", 'rtt': 0.0}]}
         else:
-            addr_in_hop_list = list(addr_in_hop)
+            addr_in_hop_list = {'index': hop.index, 'hop_info': [{'addr': k, 'rtt': v} for k, v in rtt_avg.iteritems()]}
         clean_ip_path.insert(0, addr_in_hop_list)
 
-    clean_ip_path.insert(0, ["Probe %s" % sagan_res.probe_id])
+    clean_ip_path.insert(0, {'index': 0, 'hop_info': [{'addr': "Probe %s" % sagan_res.probe_id, 'rtt': 0.0}]})
     probe_addr["Probe %s" % sagan_res.probe_id] = sagan_res.origin
 
     # Identify the AS corresponding to each hop
     node_path = []
     # print "** PATH with errors"
-    for i in range(0, len(clean_ip_path)):
+    for hop in clean_ip_path:
         hop_elem = []
-        for h in clean_ip_path[i]:
-            name = name_hop(h, sagan_res.probe_id, i)
+        for probe in hop['hop_info']:
+            name = name_hop(probe['addr'], sagan_res.probe_id, hop['index'])
             [_c, grp] = class_from_name(name)
             if grp == 'UNK':
                 unknown_addr.add(name)
-            hop_elem.append(dict(name=name, _class=_c, group=grp))
+            hop_elem.append({'name': name, '_class': _c, 'group': grp, 'rtt': probe['rtt']})
             address_to_lookup.add(name)
             # print h, name, grp
         node_path.append(hop_elem)
@@ -190,7 +201,7 @@ for res in res_blob:
     temp_path = []
     for n1, n2 in itertools.izip(node_path, clean_path):
         print "{name:>20}  {group:>8}".format(**n1[0]), " | ", "{0[0]:>20}  {0[1]:>8}".format(n2)
-        temp_path.append({'addr': n1[0]['name'], 'asn': n1[0]['group']})
+        temp_path.append({'addr': n1[0]['name'], 'asn': n1[0]['group'], 'rtt': n1[0]['rtt']})
 
     ip_path_list.append({'responded': sagan_res.destination_ip_responded, 'path': temp_path})
 
