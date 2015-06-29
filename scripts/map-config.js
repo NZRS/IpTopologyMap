@@ -70,29 +70,40 @@ var config = {
         d3.select("#last_updated").append("h4")
             .attr("class", "legendHeader")
             .html(this.afterLoad.caller.arguments[0].lastupdate);
-        var mx = 0, my = 0;
+        /*  Code below tries to adjust the viewport to center the visualization to the window.
+         *  The layout calculation sometimes drift away.
+         */
+        var min_x = 100000, min_y = 100000, max_x = -100000, max_y = -100000;
         alchemy.nodes.forEach(function(n) {
-            mx += n.x;
-            my += n.y;
+            if (n.x < min_x) { min_x = n.x; }
+            if (n.y < min_y) { min_y = n.y; }
+            if (n.x > max_x) { max_x = n.x; }
+            if (n.y > max_y) { max_y = n.y; }
         });
-        mx = mx / alchemy.nodes.length;
-        my = my / alchemy.nodes.length;
+        var mx = min_x + (max_x - min_x)/2
+        var my = min_y + (max_y - min_y)/2
+        console.log("MinPt: " + min_x + "," + min_y);
+        console.log("MaxPt: " + max_x + "," + max_y);
         console.log("Xbar = " + mx + " Ybar = " + my);
         var g_width = d3.select("svg#alchemy-canvas g").node().getBBox().width,
             g_height = d3.select("svg#alchemy-canvas g").node().getBBox().height;
         var sy = alchemy.conf.graphHeight() / g_height,
             sx = alchemy.conf.graphWidth() / g_width;
-        alchemy.conf.initialTranslate = [ -mx + (alchemy.conf.graphWidth() / 2), -my + (alchemy.conf.graphHeight() / 2)];
+        // alchemy.conf.initialTranslate = [ -mx + (alchemy.conf.graphWidth() / 2), -my + (alchemy.conf.graphHeight() / 2)];
+        /*
+        alchemy.conf.initialTranslate = [ -min_x, -min_y ];
+        alchemy.defaults.initialTranslate = alchemy.conf.initialTranslate;
         alchemy.interactions.clickZoom("reset");
+        */
         // alchemy.conf.initialScale = Math.min(sx, sy);
         // alchemy.interactions.zoom().translate(alchemy.conf.initialTranslate);
         // alchemy.interactions.zoom().scale(alchemy.conf.initialScale);
         console.log("ScaleX = " + sx + " ScaleY = " + sy);
     },
     zoomControls: true,
-    initialScale: 1.0,
-    initialTranslate: [ -10000, -10000 ],
-    scaleExtent: [ 1.0, 3.0 ],
+    initialScale: 0.8,
+    initialTranslate: [ -5400, -5200 ],
+    scaleExtent: [ 0.8, 3.0 ],
     showFilters: true,
     showControlDash: true,
     nodeFilters: false,
