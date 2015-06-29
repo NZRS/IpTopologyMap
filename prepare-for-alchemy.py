@@ -1,6 +1,7 @@
 __author__ = 'secastro'
 
 import json
+import igraph
 import networkx as nx
 from collections import defaultdict
 from networkx.readwrite import json_graph
@@ -49,10 +50,14 @@ for country in degree_set:
     print "Max = {0}, Min = {1}".format(max(degree_set[country]), min(degree_set[country]))
     degree_range.append(dict(country=country, min=min(degree_set[country]), max=max(degree_set[country])))
 
+VG = igraph.Graph.Formula()
 
 json_dump = json_graph.node_link_data(bgp_map)
+n_idx = {}
 for node in json_dump['nodes']:
     node['id'] = int(node['id'])
+    n_idx[node['id']] = VG.vcount()
+    VG.add_vertex({'name': node['id'], 'label': node['id']})
 
 s = AsRelationshipService([args.relfile])
 for link in json_dump['links']:
@@ -60,6 +65,25 @@ for link in json_dump['links']:
     link['source'] = json_dump['nodes'][link['source']]['id']
     link['target'] = json_dump['nodes'][link['target']]['id']
     link['_class'] = s.rel_char2class(s.find_rel(link['source'], link['target']))
+    VG.add_edge(n_idx[link['source']], n_idx[link['target']])
+
+layout = VG.layout("large")
+print layout.boundaries()
+(bx, by) = layout.boundaries()
+cx = (bx[0] + (bx[1] - bx[0])/2)
+cy = (by[0] + (by[1] - by[0])/2)
+print "Centroid X: ", cx
+print "Centroid Y: ", cy
+# layout.center(p=[cx, cy])
+# print layout.boundaries()
+layout.scale(scale=30)
+
+
+# Add the calculated position to the existing graph representation
+for node in json_dump['nodes']:
+    idx = n_idx[node['id']]
+    node['x'] = layout[idx][0]
+    node['y'] = layout[idx][1]
 
 json_dump['edges'] = json_dump['links']
 json_dump['dr'] = degree_range
