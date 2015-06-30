@@ -19,7 +19,7 @@ ${DATADIR}/results.json: ${DATADIR}/measurements.json
 	python fetch-results.py --datadir ${DATADIR}
 
 ${DATADIR}/bgp.json ${DATADIR}/ip.json ${DATADIR}/ip-path.json: ${DATADIR}/results.json data/known-networks.json analyze-results.py
-	python analyze-results.py --datadir ${DATADIR}
+	python analyze-results.py --datadir ${DATADIR} --sample
 
 ${DATADIR}/bgp.alchemy.json: prepare-for-alchemy.py ${DATADIR}/bgp.json
 	python prepare-for-alchemy.py --datadir ${DATADIR} --relfile data/$(REL_DAY).as-rel.txt
@@ -37,5 +37,7 @@ deploy-data: ${DATADIR}/bgp.alchemy.json
 
 deploy-test: ${DATADIR}/ip-network-graph.js html/ip-test.html
 	mkdir -p /var/www/visjs/misc/data
+	rsync -a bower_components/vis/dist/vis.map bower_components/vis/dist/vis.min.js /var/www/visjs/scripts/
+	rsync -a bower_components/vis/dist/vis.css /var/www/visjs/styles/
 	rsync -a ${DATADIR}/ip-network-graph.js /var/www/visjs/misc/data
 	rsync -a html/ip-test.html /var/www/visjs
