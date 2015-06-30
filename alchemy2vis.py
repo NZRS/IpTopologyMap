@@ -28,14 +28,15 @@ for e in graph_json_dump['links']:
     VG.add_edge(e['source'], e['target'])
 
 
-layout = VG.layout("kk", dim=2)
+# layout = VG.layout("kk", dim=2)
 
 vis_nodes = []
 vis_edges = []
 vis_ases = set()
 for n in VG.vs:
     vis_nodes.append({'id': n['name'], 'group': n['group'], 'title': '', 'AS': n['AS'], 'mass': 1,
-                      'label': n['label'], 'x': 200*layout[n.index][0], 'y': 200*layout[n.index][1]})
+                      'label': n['label']})
+# , 'x': 200*layout[n.index][0], 'y': 200*layout[n.index][1]})
     vis_ases.add(n['AS'])
 
 for e in VG.es:
