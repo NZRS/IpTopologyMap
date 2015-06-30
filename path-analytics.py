@@ -61,7 +61,7 @@ for path in ip_path:
 deviated_cnt = Counter()
 common_deviated_target = Counter()
 deviated_path = []
-deviated_hops = []
+deviated_hops = {}
 for path in ip_path:
     s = path['path'][0]
     t = path['path'][-1]
@@ -72,7 +72,7 @@ for path in ip_path:
         for hop in path['path']:
             if hop['country'] not in [dest_cc, unk_cc]:
                 departed |= True
-                deviated_hops[hop['addr']] = dict((k, hop[k]) for k in hop.iterkeys() if k in ['country', 'AS'])
+                deviated_hops[hop['addr']] = dict((k, hop[k]) for k in hop.iterkeys() if k in ['country', 'asn'])
 
         path['departed'] = departed
         if departed:
