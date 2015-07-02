@@ -3,6 +3,27 @@ __author__ = 'craig'
 '''
 This module provides a unified geolocation lookup service across multiple
 databases. Useful for cross-referencing geolocation answers.
+
+Here's a quick example of how you can use it:
+
+>>> import geoloc
+>>> geoloc.quickload()
+>>> geoloc.country_code('144.26.68.0', 'geoip')
+'US'
+>>> geoloc.country_code_all('144.26.68.0')
+{'geoip': 'US', 'known_networks': None, 'dbip': None, 'ipligence': None, 'ip2location': 'US'}
+
+if you want to check for anomalies you can set a particular database as
+being an oracle. It is considered an authoritative source, so if they give
+some answer to a query it's considered the correct one.
+
+>>> geoloc.country_code_all('103.26.68.0')
+{'geoip': 'AU', 'known_networks': u'NZ', 'dbip': 'AU', 'ipligence': None, 'ip2location': 'AU'}
+>>> geoloc.anomalous('103.26.68.0')
+True
+>>> geoloc.oracle('known_networks')
+>>> geoloc.anomalous('103.26.68.0')
+False
 '''
 
 ## Imports.
@@ -50,6 +71,11 @@ oracle = None
 
 ## Geoloc public interface.
 ## ----------------------------------------------------------------------
+
+def clear():
+    global available_dbs, _dbs
+    _dbs = { k : None for k in _dbs }
+    available_dbs = []
 
 def anomalous(ip_addr):
     '''
@@ -127,7 +153,7 @@ def load_db(db_name, db_fpath):
 
     # update table of supported databases
     global available_dbs
-    available_dbs = [x for x in _dbs.keys() if x is not None]
+    available_dbs = [k for k,v in _dbs.items() if v is not None]
 
 def query(to_query, ip_addr, db_name):
     '''
@@ -168,7 +194,10 @@ def country_code(ip_addr, db_name):
 
     # perform query
     if db_name == 'geoip': return _dbs[db_name].country_code_by_addr(ip_addr)
-    elif db_name == 'ip2location': return _dbs[db_name].get_country_short(ip_addr)
+    elif db_name == 'ip2location':
+        cc = _dbs[db_name].get_country_short(ip_addr)
+
+        return _dbs[db_name].get_country_short(ip_addr)
     elif db_name == 'known_networks':
         rt_node = _dbs[db_name].search_best(network=ip_addr, masklen=32)
         return None if rt_node is None else rt_node.data['cc']
