@@ -8,12 +8,16 @@ databases. Useful for cross-referencing geolocation answers.
 ## Imports.
 ## ----------------------------------------------------------------------
 
+# geolocation modules
 import GeoIP
 import IP2Location
-from radix import Radix
-from netaddr import IPAddress
-from bisect import bisect
-import json
+
+# used internally
+from radix import Radix as _Radix
+from netaddr import IPAddress as _IPAddress
+from bisect import bisect as _bisect
+import json as _json
+from collections import defaultdict as _defaultdict
 
 
 
@@ -30,15 +34,50 @@ _dbs = {
     'ipligence' : None
 }
 
-# tables telling you what is currently available to use
+# allowable queries to this geolocation service.
 supported_queries = ['country_code']
+
+# databases which have currently been loaded and are ready to be queried.
 available_dbs = []
 
-def quickload(data_dir):
+
+
+
+## Geoloc public interface.
+## ----------------------------------------------------------------------
+
+def anomalous(ip_addr):
+    '''
+    Check if the given ip address is a potential geolocation anomaly
+    (if multiple dbs disagree about its country).
+    :param ip_addr: str, the ip address to check
+    :return: boolean
+    '''
+    results = country_code_all(ip_addr, filter_nones=True)
+    return len(results) == 1 or len(set(results.values())) != 1
+
+def find_anomalies(addresses):
+    '''
+    Find those IPs for which different geolocation services give different
+    answers about the country of origin.
+    :param addresses: [str] an iterable of ip addresses
+    :return: radix tree of strings.
+    '''
+    rt = _Radix()
+    for ip_addr in addresses:
+        results = country_code_all(ip_addr, filter_nones=True)
+        # if only <2 dbs could geolocate => potential anomaly
+        if len(results) == 1: rt.add(ip_addr)
+        # not one unique answer for all dbs => potential anomaly
+        elif len(set(results.values())) != 1: rt.add(ip_addr)
+    return rt
+
+def quickload():
     '''
     Loads all known geolocation services using their default filenames from the given working directory.
     :param data_dir: directory containing files
     '''
+    data_dir = "data"
     load_db("geoip", data_dir + "/GeoIP.dat")
     load_db("ip2location", data_dir + "/IP-COUNTRY.bin")
     load_db("known_networks", data_dir + "/known-networks.json")
@@ -59,18 +98,17 @@ def load_db(db_name, db_fpath):
     if db_name == "geoip": _dbs[db_name] = GeoIP.open(db_fpath, GeoIP.GEOIP_STANDARD)
     elif db_name == "ip2location": _dbs[db_name] = IP2Location.IP2Location(db_fpath)
     elif db_name == "known_networks":
-        _dbs['known_networks'] = Radix()
+        _dbs['known_networks'] = _Radix()
         with open(db_fpath, 'rb') as known_net_file:
-            known_networks = json.load(known_net_file)
+            known_networks = _json.load(known_net_file)
         for p in known_networks:
             # Only keep prefices whose country we know
             if 'country' in p:
                 n = _dbs['known_networks'].add(p['net'])
                 n.data['cc'] = p['country']
-    elif db_name == "dbip": _dbs[db_name] = DBIP(db_fpath)
+    elif db_name == "dbip": _dbs[db_name] = _loadDBIP(db_fpath)
     elif db_name == "ipligence": _dbs[db_name] = IPligence(db_fpath)
-    else:
-        raise ValueError("error loading db {}".format(db_name))
+    else: raise ValueError("error loading db {}".format(db_name))
 
     # update table of supported databases
     global available_dbs
@@ -78,8 +116,8 @@ def load_db(db_name, db_fpath):
 
 def query(to_query, ip_addr, db_name):
     '''
-    Query a given database for a property of the address.
-    Use for making lots of queries.
+    Query a given database for a property of the address. Use for making lots of
+    different kinds of queries.
     :param to_query: attribute to query.
     :param ip_addr: address to lookup.
     :param db_name: name of database to query.
@@ -89,14 +127,16 @@ def query(to_query, ip_addr, db_name):
     if to_query == "country_code": return country_code(ip_addr, db_name)
     else: raise ValueError("Could not perform {} query in {} database".format(to_query, db_name))
 
-def query_all(to_query, ip_addr):
+def query_all(to_query, ip_addr, filter_nones=False):
     '''
     Make the given query for every database.
     :param to_query: the field to query.
     :param ip_addr: ip address to lookup.
     :return: { str : str }, database to query result
     '''
-    return { db : query(to_query, ip_addr, db) for db in available_dbs }
+    results = { db : query(to_query, ip_addr, db) for db in available_dbs }
+    if not filter_nones: return results
+    else: return { k : v for k,v in results.items() if v is not None }
 
 def country_code(ip_addr, db_name):
     '''
@@ -104,6 +144,7 @@ def country_code(ip_addr, db_name):
     :param ip_addr: ip address to query
     :param db_name: geolocation db to query from
     :return: country as given by the db. Raises ValueError if db has not yet been created.
+             Returns None if the db didn't know the answer.
     '''
 
     # validate query
@@ -113,41 +154,45 @@ def country_code(ip_addr, db_name):
     # perform query
     if db_name == 'geoip': return _dbs[db_name].country_code_by_addr(ip_addr)
     elif db_name == 'ip2location': return _dbs[db_name].get_country_short(ip_addr)
-    elif db_name == 'known_networks': return _dbs[db_name].search_best(network=ip_addr, masklen=32)
-    elif db_name == 'dbip': return _dbs[db_name].country_code(ip_addr)
-    elif db_name == 'ipligence': return _dbs[db_name].country_code(ip_addr)
+    elif db_name == 'known_networks':
+        rt_node = _dbs[db_name].search_best(network=ip_addr, masklen=32)
+        return None if rt_node is None else rt_node.data['cc']
+    elif db_name == 'dbip': return _dbs[db_name][ip_addr]
+    elif db_name == 'ipligence': _dbs[db_name].country_code(ip_addr)
     else: raise ValueError("error querying {} db".format(db_name))
 
-def country_code_all(ip_addr):
+def country_code_all(ip_addr, filter_nones=False):
     '''
     Query all databases for the country code of the ip address.
     :param ip_addr: ip address to look up
+    :param filter_nones: True/False whether to get rid of query results
+                which map to None (these mean the database didn't have an entry for that ip)
     :return: { str : str }, a mapping of database -> result
     '''
-    return { db : country_code(ip_addr, db) for db in available_dbs }
+    results = { db : country_code(ip_addr, db) for db in available_dbs }
+    if not filter_nones: return results
+    else: return { k : v for k,v in results.items() if v is not None }
 
 
-## DBIP.
+
+## Geoloc private/helper functions.
 ## ----------------------------------------------------------------------
-'''
-A wrapper for querying data in the .csv file provided by dbip.
-'''
 
-
-class DBIP(object):
+def _loadDBIP(fpath):
     '''
-    This is basically a dict of ip -> country code.
+    Load dbip data,
+    :param fpath: location of dbip data.
+    :return: a dict of ip -> country code.
     '''
-
-    def __init__(me, fpath):
-        with open(fpath, 'rb') as f:
-            me.values = {}
-            for line in f:
-                # line looks like: "IP_ADDR", ___, "COUNTRY_CODE"
-                line = line.split(',')
-                # every value has quotes around it so strip them
-                # also strip end line characters
-                me.values[line[0][1:-1]] = line[2].rstrip()[1:-1]
+    with open(fpath, 'rb') as f:
+        values = _defaultdict(lambda : None) # returns None if key not present
+        for line in f:
+            # line looks like :
+            line = line.split(',')
+            # every value has quotes around it so strip them
+            # also strip end line characters
+            values[line[0][1:-1]] = line[2].rstrip()[1:-1]
+        return values
 
     def country_code(me, ip_addr):
         '''
@@ -155,15 +200,15 @@ class DBIP(object):
         :param ip_addr: address to query.
         :return: str
         '''
-        return me.values[ip_addr] if ip_addr in me.values else None
+        return me.values[ip_addr]
 
 
 
-## IPligence.
+## IPligence wrapper.
 ## ----------------------------------------------------------------------
 class IPligence(object):
     '''
-    A wrapper for the IPligence .csv, which stores country by blocks of
+    A wrapper for the IPligence data, which stores country by blocks of
     IP addresses. The ranges are non-overlapping, so we store as a
     monotonically increasing list of elements (store the range by its
     starting point). We keep a mapping of these intervals to their
@@ -212,13 +257,13 @@ class IPligence(object):
         '''
 
         # convert dotted notation to the int representation
-        ip_intfmt = int(IPAddress(ip_addr))
+        ip_intfmt = int(_IPAddress(ip_addr))
 
         # out of range of valid IPs
         if ip_intfmt < me.intervals[0] or ip_intfmt > me.intervals[-1]:
             return None
 
         # use binary search to look up appropriate range
-        indx = bisect(me.intervals, ip_intfmt) - 1
+        indx = _bisect(me.intervals, ip_intfmt) - 1
         val = me.intervals[indx]
         return me.mapping[val] if val in me.mapping else None
