@@ -21,11 +21,13 @@ def main():
         paths = json.load(file)
     print "Loading geolocation databases..."
     geoloc.quickload()
+    geoloc.oracle("known_networks") # considered authoritative source
     print "Finished loading\n"
 
     # if address field has these strings in it, its value could not be determined
     print "Checking anomalies..."
 
+    # undecidables should be ignored
     undecidables = ["Probe", "Private", "Hop"]
     def undecidable(addr):
         for unk in undecidables:
@@ -40,27 +42,22 @@ def main():
         hops = path['path']
         probe = hops[0]['addr']
         anomalies = []
-        unknowns = []
         for hop in hops[1:]:
             ip_addr = hop['addr']
-            if undecidable(ip_addr):
-                unknowns.append(ip_addr)
-            elif geoloc.anomalous(ip_addr):
-                anomalies.append(ip_addr)
+            if undecidable(ip_addr): continue
+            elif geoloc.anomalous(ip_addr): anomalies.append(ip_addr)
 
         #if probe in probe2anomalies:
         #    print "Name clash! Two probes are called {}.".format(probe)
 
         # don't record pure traces
-        if len(unknowns) == 0 and len(anomalies) == 0: continue
+        if len(anomalies) == 0: continue
 
         # record
         probe_obj = {
-            'pathLength' : len(hops),
+            'length_trace' : len(hops),
             'ips_anomalous' : anomalies,
-            'ips_unknown' : unknowns,
             'num_anomalies' : len(anomalies),
-            'num_unknowns' : len(unknowns)
         }
         probe2anomalies[probe] = probe_obj
     print "Finished checking anomalies\n"

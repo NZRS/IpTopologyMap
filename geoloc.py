@@ -40,6 +40,11 @@ supported_queries = ['country_code']
 # databases which have currently been loaded and are ready to be queried.
 available_dbs = []
 
+# if the oracle has an answer to a query, it's always considered the
+# correct answer and as such is privileged over other answers when it
+# comes to checking anomalies.
+oracle = None
+
 
 
 
@@ -50,10 +55,19 @@ def anomalous(ip_addr):
     '''
     Check if the given ip address is a potential geolocation anomaly
     (if multiple dbs disagree about its country).
+
+    An address is a potential anomaly if one of the following is true:
+        - only one geolocation database could locate it
+        - multiple geolocation databases gave different answers about where it is
+
+    If you've set an oracle, an address is not considered anomalous if that
+    oracle is able to place it somewhere.
+
     :param ip_addr: str, the ip address to check
     :return: boolean
     '''
     results = country_code_all(ip_addr, filter_nones=True)
+    if oracle in results: return False # authoritative source
     return len(results) == 1 or len(set(results.values())) != 1
 
 def find_anomalies(addresses):
@@ -66,6 +80,7 @@ def find_anomalies(addresses):
     rt = _Radix()
     for ip_addr in addresses:
         results = country_code_all(ip_addr, filter_nones=True)
+        if oracle in results: continue # authoritative source
         # if only <2 dbs could geolocate => potential anomaly
         if len(results) == 1: rt.add(ip_addr)
         # not one unique answer for all dbs => potential anomaly
@@ -172,6 +187,11 @@ def country_code_all(ip_addr, filter_nones=False):
     results = { db : country_code(ip_addr, db) for db in available_dbs }
     if not filter_nones: return results
     else: return { k : v for k,v in results.items() if v is not None }
+
+def oracle(db_name):
+    if db_name not in _dbs: raise ValueError("Setting unknown db {} to oracle".format(db_name))
+    global oracle
+    oracle = db_name
 
 
 
