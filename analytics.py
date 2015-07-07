@@ -122,9 +122,11 @@ def deviation_hops():
 
             # hop to another country
             if cc not in [dest_cc, unk_cc] and prev_cc in [dest_cc] and not undecidable(addr):
-                deviation_hops.append({ "foreign_cc" : addr,
+                deviation_hops.append({ "foreign_cc" : cc,
+                                        "foreign_ip" : addr,
                                         "foreign_asn" : asn,
                                         "domestic_cc" : prev_cc,
+                                        "domestic_ip" : prev_ip,
                                         "domestic_asn" : prev_asn,
                                         "origin" : source,
                                         "goal" : goal })
@@ -135,13 +137,11 @@ def deviation_hops():
                 else:
                     destinations[addr]["count"] += 1
 
-
-            prev_ip = addr
-            prev_cc = cc
+            prev_asn, prev_ip, prev_cc = asn, addr, cc
 
     global OUTPUT_DIR
     with open(OUTPUT_DIR + "/deviation-hops.json", "wb") as f:
-        json.dump(deviation_hops, f, indent=2)
+        json.dump(deviation_hops, f, indent=2, sort_keys=True)
     with open(OUTPUT_DIR + "/deviation-hop-destinations.json", "wb") as f:
         json.dump(destinations, f, indent=2)
 
