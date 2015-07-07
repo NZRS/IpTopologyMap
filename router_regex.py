@@ -37,8 +37,8 @@ def regex_string():
     :return: string
     '''
 
-    # vocus routers look like this: XXXXXXXXX.akl.vocus.net.nz
-    str_vocus = "(" + _st(3) + "\.vocus\.net\.nz)"
+    # vocus routers look like this: XXXXXXXXX.alb105.akl.vocus.net.nz
+    str_vocus = "(" + _st(3) + _nm() + "\." + _st(3) + "\.vocus\.net\.nz)"
 
     # fx routers look like this: XXXXXXXX.aktnz-rt1.fx.net.nz
     str_fx = "(" + _st(5) + "-rt" + _nm() + "\.fx\.net\.nz" + ")"
