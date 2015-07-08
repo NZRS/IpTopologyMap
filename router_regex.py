@@ -29,7 +29,7 @@ def regex():
     '''
 
     string = regex_string()
-    return re.compile(string)
+    return re.compile(string, re.IGNORECASE)
 
 def regex_string():
     '''
