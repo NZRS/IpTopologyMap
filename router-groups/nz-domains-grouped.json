@@ -1,0 +1,125 @@
+{
+  "?": {
+    "?": [
+      "14.1.59.8.host.layer2.co.nz", 
+      "192-100-53-0.actrix.co.nz", 
+      "TenGigE0-0-2-0-310.aktnz-art1.fx.net.nz", 
+      "dslwg-bgp-a.datacom.net.nz", 
+      "idcakl-orb-cs1.datacom.net.nz", 
+      "opldn-anz-rt1.fx.net.nz", 
+      "show-dog.acsdata.co.nz"
+    ]
+  }, 
+  "fx": {
+    "akkin-rt2": [
+      "TenGigabitEthernet0-1-0-536.akkin-rt2.fx.net.nz", 
+      "TenGigabitEthernet0-3-0-501.akkin-rt2.fx.net.nz"
+    ], 
+    "aknnr-rt1": [
+      "TenGigabitEthernet0-0-0-325.aknnr-rt1.fx.net.nz", 
+      "TenGigabitEthernet0-1-0-534.aknnr-rt1.fx.net.nz", 
+      "TenGigabitEthernet0-2-0-2238.aknnr-rt1.fx.net.nz", 
+      "TenGigabitEthernet0-2-0-2244.aknnr-rt1.fx.net.nz", 
+      "TenGigabitEthernet0-2-0-8830008.aknnr-rt1.fx.net.nz", 
+      "TenGigabitEthernet0-2-0-917.aknnr-rt1.fx.net.nz", 
+      "TenGigabitEthernet1-3-0-501.aknnr-rt1.fx.net.nz"
+    ], 
+    "aktnz-rt1": [
+      "TenGigabitEthernet0-3-0-2202.aktnz-rt1.fx.net.nz", 
+      "TenGigabitEthernet0-3-0-2205.aktnz-rt1.fx.net.nz", 
+      "TenGigabitEthernet0-3-0-2239.aktnz-rt1.fx.net.nz", 
+      "TenGigabitEthernet0-3-0-26330925.aktnz-rt1.fx.net.nz", 
+      "TenGigabitEthernet0-3-0-828.aktnz-rt1.fx.net.nz", 
+      "TenGigabitEthernet0-3-0-909.aktnz-rt1.fx.net.nz", 
+      "TenGigabitEthernet0-3-0-969.aktnz-rt1.fx.net.nz", 
+      "TenGigabitEthernet0-3-0-995.aktnz-rt1.fx.net.nz"
+    ], 
+    "chrev-rt1": [
+      "TenGigE0-0-2-0-317.chrev-rt1.fx.net.nz", 
+      "TenGigE0-0-2-0-320.chrev-rt1.fx.net.nz"
+    ], 
+    "otdun-rt1": [
+      "TenGigE0-0-2-0-321.otdun-rt1.fx.net.nz"
+    ], 
+    "wnmur-rt1": [
+      "TenGigabitEthernet0-1-0-310.wnmur-rt1.fx.net.nz", 
+      "TenGigabitEthernet0-1-0-536.wnmur-rt1.fx.net.nz", 
+      "TenGigabitEthernet0-1-0-537.wnmur-rt1.fx.net.nz", 
+      "TenGigabitEthernet0-2-0-26170900.wnmur-rt1.fx.net.nz", 
+      "TenGigabitEthernet0-2-0-904.wnmur-rt1.fx.net.nz", 
+      "TenGigabitEthernet0-2-0-921.wnmur-rt1.fx.net.nz", 
+      "TenGigabitEthernet0-2-0-972.wnmur-rt1.fx.net.nz", 
+      "TenGigabitEthernet0-2-0-979.wnmur-rt1.fx.net.nz"
+    ], 
+    "wntnz-rt1": [
+      "TenGigabitEthernet0-1-0-223.wntnz-rt1.fx.net.nz", 
+      "TenGigabitEthernet0-1-0-900.wntnz-rt1.fx.net.nz", 
+      "TenGigabitEthernet0-1-0-985.wntnz-rt1.fx.net.nz"
+    ], 
+    "wnwnr-rt1": [
+      "TenGigabitEthernet0-1-0-537.wnwnr-rt1.fx.net.nz", 
+      "TenGigabitEthernet0-2-0-534.wnwnr-rt1.fx.net.nz"
+    ]
+  }, 
+  "nzix": {
+    "?": [
+      "2talk.ape.nzix.net", 
+      "actrix.ape.nzix.net", 
+      "aut2.ape.nzix.net", 
+      "callplus1.ape.nzix.net", 
+      "callplus2.ape.nzix.net", 
+      "cloudflare.ape.nzix.net", 
+      "compass.ape.nzix.net", 
+      "datacom.ape.nzix.net", 
+      "dts2.ape.nzix.net", 
+      "fastcom1.ape.nzix.net", 
+      "gigabit.fx1.ape.nzix.net", 
+      "hdnetltd.ape.nzix.net", 
+      "horizonpacific.ape.nzix.net", 
+      "iconz1.ape.nzix.net", 
+      "iconz2.ape.nzix.net", 
+      "kci.ape.nzix.net", 
+      "lightwire.ape.nzix.net", 
+      "localcloud2.ape.nzix.net", 
+      "massey.ape.nzix.net", 
+      "maxnet1.ape.nzix.net", 
+      "maxum-sky48.ape.nzix.net", 
+      "orcon2.ape.nzix.net", 
+      "pipe.ape.nzix.net", 
+      "plain1.ape.nzix.net", 
+      "plan-b2.ape.nzix.net", 
+      "reannz.ape.nzix.net", 
+      "snap1.ape.nzix.net", 
+      "solarix.ape.nzix.net", 
+      "vector.ape.nzix.net", 
+      "vibe.ape.nzix.net", 
+      "vocus1.ape.nzix.net", 
+      "vodafone1.ape.nzix.net", 
+      "voyager2.ape.nzix.net", 
+      "woosh1.ape.nzix.net", 
+      "wxc1.ape.nzix.net"
+    ]
+  }, 
+  "snap": {
+    "?": [
+      "peer-fx.akl.snap.net.nz", 
+      "peer-fx.wlg.snap.net.nz"
+    ]
+  }, 
+  "vocus": {
+    "akl05akl": [
+      "as45181.cust.bdr01.akl05.akl.VOCUS.net.nz", 
+      "as9889.cust.bdr01.akl05.akl.VOCUS.net.nz", 
+      "ten-0-1-0-2.cor01.akl05.akl.VOCUS.net.nz", 
+      "ten-0-3-0-1002.bdr01.akl05.akl.vocus.net.nz", 
+      "ten-0-7-0-5.cor01.akl05.akl.VOCUS.net.nz"
+    ], 
+    "alb01akl": [
+      "as45280.cust.bdr02.alb01.akl.VOCUS.net.nz", 
+      "as9889.cust.bdr02.alb01.akl.VOCUS.net.nz", 
+      "ten-0-1-0-3.cor01.alb01.akl.VOCUS.net.nz", 
+      "ten-0-3-0-1623.bdr02.alb01.akl.VOCUS.net.nz", 
+      "ten-0-7-0-2.cor01.alb01.akl.VOCUS.net.nz"
+    ]
+  }
+}
