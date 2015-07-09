@@ -7,8 +7,7 @@ import argparse
 from collections import defaultdict
 
 rgx = None
-companies = ["vocus", "snap", "nzix", "fx"]
-regexes = { x : re.compile(rout.company_regex(x), re.IGNORECASE) for x in companies }
+regexes = { x : re.compile(rout.regex_company(x), re.IGNORECASE) for x in rout.companies }
 
 def frouter(company, domain):
     '''
@@ -19,19 +18,29 @@ def frouter(company, domain):
     :return: string
     '''
 
+    # XXXXXX.wnmur-rt1.fx.net.nz --> wnmur-rt1
     if company == "fx":
-        # XXXXXX.wnmur-rt1.fx.net.nz --> wnmur-rt1
         domain = re.search(regexes["fx"], domain).group()
         return domain.rstrip(".fx.net.nz")
+
     elif company == "snap":
         return "?"
+
+    # XXXXXXXX.akl05.akl.VOCUS.net.nz --> akl105.akl
     elif company == "vocus":
-        # XXXXXXXX.akl05.akl.VOCUS.net.nz
         domain = re.search(regexes["vocus"], domain).group()
         domain = domain.split(".")
         return domain[0] + domain[1]
+
     elif company == "nzix":
         return "?"
+
+    # XXXXXXXXX.v4wlg0.acsdata.co.nz --> v4wlg0
+    elif company == "acsdata":
+        domain = re.search(regexes[company], domain).group()
+        domain = domain.split(".")
+        return domain[0]
+
     else:
         return "?"
 
@@ -41,10 +50,17 @@ def fcompany(domain):
     :param domain: the domain.
     :return: string
     '''
+
+    # Check among existing regexes.
     for company, regex in regexes.items():
         if re.search(regex, domain) is not None:
             return company
-    return "?"
+
+    # If there isn't one, take company name by stripping hld.
+    zones = domain.split(".")
+
+    if zones[-1] == "net": return ".".join(zones[-2:])
+    else: return ".".join(zones[-3:])
 
 def main():
 

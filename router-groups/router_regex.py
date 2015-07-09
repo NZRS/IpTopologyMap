@@ -2,6 +2,8 @@ __author__ = 'aaron'
 
 import re
 
+companies = ["vocus", "fx", "snap", "nzix", "acsdata"]
+
 def _st(len=None):
     '''
     Construct a regex which matches alphabetic strings.
@@ -31,26 +33,37 @@ def regex():
     string = regex_string()
     return re.compile(string, re.IGNORECASE)
 
+def regex_company(company):
+
+    # vocus routers look like this: XXXXXXXXX.alb105.akl.vocus.net.nz
+    if company == "vocus":
+        return "(" + _st(3) + _nm() + "\." + _st(3) + "\.vocus\.net\.nz)"
+
+    # fx routers look like this: XXXXXXXX.aktnz-rt1.fx.net.nz
+    elif company == "fx":
+        return "(" + _st(5) + "-rt" + _nm() + "\.fx\.net\.nz" + ")"
+
+    # snap routers look like this: XXXXXXXX.akl.snap.net.nz
+    elif company == "snap":
+        return "(" + _st(3) + "\.snap\.net\.nz)"
+
+    # nzix routers look like this: XXXXXXX.ape.nzix.net or XXXXXXX.wlg.nzix.net
+    elif company == "nzix":
+        exchanges = ["ape", "hix", "pnix", "wix", "chiz"]
+        xchange = "(" + "|".join(exchanges) + ")"
+        return "(" + xchange + "\.nzix\.net)"
+
+    # acsdata routers look like this: XXXXXXX.v4akl1.acsdata.co.nz
+    elif company == "acsdata":
+        return "(v" + _nm() + _st(3) + _nm() + "\.acsdata\.co\.nz)"
+
+    else:
+        raise ValueError("No regex for {}".format(company))
+
 def regex_string():
     '''
     Get the string representation of the regex pattern for matching nz routers.
     :return: string
     '''
-
-    # vocus routers look like this: XXXXXXXXX.alb105.akl.vocus.net.nz
-    str_vocus = "(" + _st(3) + _nm() + "\." + _st(3) + "\.vocus\.net\.nz)"
-
-    # fx routers look like this: XXXXXXXX.aktnz-rt1.fx.net.nz
-    str_fx = "(" + _st(5) + "-rt" + _nm() + "\.fx\.net\.nz" + ")"
-
-    # snap routers look like this: XXXXXXXX.akl.snap.net.nz
-    str_snap = "(" + _st(3) + "\.snap\.net\.nz)"
-
-    # nzix routers look like this: XXXXXXX.ape.nzix.net or XXXXXXX.wlg.nzix.net
-    exchanges = ["ape", "hix", "pnix", "wix", "chiz"]
-    xchange = "(" + "|".join(exchanges) + ")"
-    str_nzix = "(" + xchange + "\.nzix\.net)"
-
-    # OR the regex strings together
-    strs = [str_vocus, str_fx, str_snap, str_nzix]
-    return "|".join(strs)
+    global companies
+    return "|".join(regex_company(c) for c in companies)
