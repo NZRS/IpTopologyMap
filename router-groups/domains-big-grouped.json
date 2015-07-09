@@ -57,11 +57,6 @@
       "svi41.wlg69sw.acsdata.co.nz"
     ]
   }, 
-  "akl.dtsanz.com": {
-    "?": [
-      "v899.cr1.alb.akl.dtsanz.com"
-    ]
-  }, 
   "alliedtelesis.co.nz": {
     "?": [
       "1-163-36-202-static.alliedtelesis.co.nz", 
@@ -175,9 +170,10 @@
       "v110.cs1.uht.dts.net.nz"
     ]
   }, 
-  "e1-21-alb-br1.nztechnologygroup.com": {
+  "dtsanz.com": {
     "?": [
-      "e1-21-alb-br1.nztechnologygroup.com"
+      "v891-tt.cr4.syd.dtsanz.com", 
+      "v899.cr1.alb.akl.dtsanz.com"
     ]
   }, 
   "econz.co.nz": {
@@ -232,103 +228,116 @@
       "TenGigE0-0-2-0-310.aktnz-art1.fx.net.nz"
     ]
   }, 
-  "ge-0-0-0-34-mdr-cr1.nztechnologygroup.com": {
-    "?": [
-      "ge-0-0-0-34-mdr-cr1.nztechnologygroup.com"
-    ]
-  }, 
-  "ge-0-0-0-35-mdr-cr2.nztechnologygroup.com": {
-    "?": [
-      "ge-0-0-0-35-mdr-cr2.nztechnologygroup.com"
-    ]
-  }, 
-  "ge-0-0-3-10-10-mdr-cr1.nztechnologygroup.com": {
-    "?": [
-      "ge-0-0-3-10-10-mdr-cr1.nztechnologygroup.com"
-    ]
-  }, 
-  "ge-0-1-21-alb-cr2.nztechnologygroup.com": {
-    "?": [
-      "ge-0-1-21-alb-cr2.nztechnologygroup.com"
-    ]
-  }, 
-  "ge-0-1-22-alb-cr1.nztechnologygroup.com": {
-    "?": [
-      "ge-0-1-22-alb-cr1.nztechnologygroup.com"
-    ]
-  }, 
   "ge-0-9-fw.webconnect.nz": {
     "?": [
       "ge-0-9-fw.webconnect.nz"
+    ]
+  }, 
+  "global-gateway": {
+    "akbr6": [
+      "ae4-100.akbr6.global-gateway.net.nz", 
+      "ae8-10.akbr6.global-gateway.net.nz", 
+      "g7-2-8-201.akbr6.global-gateway.net.nz"
+    ], 
+    "akbr7": [
+      "ae0-10.akbr7.global-gateway.net.nz", 
+      "ae5-2.akbr7.global-gateway.net.nz", 
+      "ae6-10.akbr7.global-gateway.net.nz"
+    ], 
+    "akcr10": [
+      "g1-0-0-121.akcr10.global-gateway.net.nz", 
+      "iconz-dom.akcr10.global-gateway.net.nz", 
+      "wxc-dom.akcr10.global-gateway.net.nz"
+    ], 
+    "akcr11": [
+      "2talk-dom.akcr11.global-gateway.net.nz", 
+      "ae10-43.akcr11.global-gateway.net.nz", 
+      "ae4-101.akcr11.global-gateway.net.nz", 
+      "ae8-20.akcr11.global-gateway.net.nz", 
+      "ae9-42.akcr11.global-gateway.net.nz", 
+      "ae9-44.akcr11.global-gateway.net.nz", 
+      "fx-dom.akcr11.global-gateway.net.nz", 
+      "kordia-dom.akcr11.global-gateway.net.nz", 
+      "x1-1-1-200.akcr11.global-gateway.net.nz", 
+      "xe1-3-2-200.akcr11.global-gateway.net.nz"
+    ], 
+    "akcr8": [
+      "dairynz-dom.akcr8.global-gateway.net.nz", 
+      "g1-1-0-697.akcr8.global-gateway.net.nz"
+    ], 
+    "lebr7": [
+      "ae0-10.lebr7.global-gateway.net.nz", 
+      "ae3-10.lebr7.global-gateway.net.nz", 
+      "xe2-3-1.lebr7.global-gateway.net.nz", 
+      "xe7-0-1-10.lebr7.global-gateway.net.nz"
+    ], 
+    "lebr8": [
+      "ae0-10.lebr8.global-gateway.net.nz"
+    ], 
+    "pabr5": [
+      "ae0.pabr5.global-gateway.net.nz"
+    ], 
+    "sebr2": [
+      "aapt-dom.sebr2.global-gateway.net.nz"
+    ], 
+    "sebr3": [
+      "ae0-10.sebr3.global-gateway.net.nz"
+    ], 
+    "sebr4": [
+      "ae7-10.sebr4.global-gateway.net.nz"
+    ], 
+    "sgbr3": [
+      "xe0-0-1.sgbr3.global-gateway.net.nz", 
+      "xe0-0-4.sgbr3.global-gateway.net.nz", 
+      "xe7-0-2.sgbr3.global-gateway.net.nz"
+    ], 
+    "sjbr3": [
+      "ae3-10.sjbr3.global-gateway.net.nz", 
+      "xe-0-0-7-3.sjbr3.global-gateway.net.nz"
+    ], 
+    "tkbr11": [
+      "xe-2-3-1-115.tkbr11.global-gateway.net.nz"
+    ], 
+    "tkbr12": [
+      "ae0-10.tkbr12.global-gateway.net.nz", 
+      "ae1-10.tkbr12.global-gateway.net.nz", 
+      "ae3-9.tkbr12.global-gateway.net.nz", 
+      "xe0-0-0.tkbr12.global-gateway.net.nz", 
+      "xe0-0-2.tkbr12.global-gateway.net.nz", 
+      "xe0-0-4.tkbr12.global-gateway.net.nz", 
+      "xe0-0-9.tkbr12.global-gateway.net.nz", 
+      "xe7-0-5.tkbr12.global-gateway.net.nz", 
+      "xe7-0-7.tkbr12.global-gateway.net.nz", 
+      "xe8-0-3.tkbr12.global-gateway.net.nz", 
+      "xe8-0-5-0.tkbr12.global-gateway.net.nz"
+    ], 
+    "tkcr4": [
+      "invercargill-cc-comb.tkcr4.global-gateway.net.nz", 
+      "sprint-csd-comb.tkcr4.global-gateway.net.nz", 
+      "vector-dom.tkcr4.global-gateway.net.nz"
+    ], 
+    "tkcr5": [
+      "ae10-44.tkcr5.global-gateway.net.nz", 
+      "ae9-42.tkcr5.global-gateway.net.nz", 
+      "ae9-43.tkcr5.global-gateway.net.nz", 
+      "fx-dom.tkcr5.global-gateway.net.nz", 
+      "lightwire-dom.tkcr5.global-gateway.net.nz", 
+      "vocus-dom.tkcr5.global-gateway.net.nz", 
+      "x2-0-1-200.tkcr5.global-gateway.net.nz", 
+      "xe1-2-1-200.tkcr5.global-gateway.net.nz", 
+      "xe2-3-1-104.tkcr5.global-gateway.net.nz"
+    ], 
+    "wwbr3": [
+      "pachub.wwbr3.global-gateway.net.nz", 
+      "xe0-0-0.wwbr3.global-gateway.net.nz"
     ]
   }, 
   "global-gateway.net.nz": {
     "?": [
       "210-54-146-79.global-gateway.net.nz", 
       "210-55-130-201.cid.global-gateway.net.nz", 
-      "2talk-dom.akcr11.global-gateway.net.nz", 
-      "aapt-dom.sebr2.global-gateway.net.nz", 
-      "ae0-10.akbr7.global-gateway.net.nz", 
-      "ae0-10.lebr7.global-gateway.net.nz", 
-      "ae0-10.lebr8.global-gateway.net.nz", 
-      "ae0-10.sebr3.global-gateway.net.nz", 
-      "ae0-10.tkbr12.global-gateway.net.nz", 
-      "ae0.pabr5.global-gateway.net.nz", 
-      "ae1-10.tkbr12.global-gateway.net.nz", 
-      "ae10-43.akcr11.global-gateway.net.nz", 
-      "ae10-44.tkcr5.global-gateway.net.nz", 
-      "ae3-10.lebr7.global-gateway.net.nz", 
-      "ae3-10.sjbr3.global-gateway.net.nz", 
-      "ae3-9.tkbr12.global-gateway.net.nz", 
-      "ae4-100.akbr6.global-gateway.net.nz", 
-      "ae4-101.akcr11.global-gateway.net.nz", 
-      "ae5-2.akbr7.global-gateway.net.nz", 
-      "ae6-10.akbr7.global-gateway.net.nz", 
-      "ae7-10.sebr4.global-gateway.net.nz", 
-      "ae8-10.akbr6.global-gateway.net.nz", 
-      "ae8-20.akcr11.global-gateway.net.nz", 
-      "ae9-42.akcr11.global-gateway.net.nz", 
-      "ae9-42.tkcr5.global-gateway.net.nz", 
-      "ae9-43.tkcr5.global-gateway.net.nz", 
-      "ae9-44.akcr11.global-gateway.net.nz", 
-      "dairynz-dom.akcr8.global-gateway.net.nz", 
-      "fx-dom.akcr11.global-gateway.net.nz", 
-      "fx-dom.tkcr5.global-gateway.net.nz", 
-      "g1-0-0-121.akcr10.global-gateway.net.nz", 
-      "g1-1-0-697.akcr8.global-gateway.net.nz", 
-      "g7-2-8-201.akbr6.global-gateway.net.nz", 
-      "iconz-dom.akcr10.global-gateway.net.nz", 
-      "invercargill-cc-comb.tkcr4.global-gateway.net.nz", 
-      "kordia-dom.akcr11.global-gateway.net.nz", 
-      "lightwire-dom.tkcr5.global-gateway.net.nz", 
       "mdr-ip24-dom.msc.global-gateway.net.nz", 
-      "mdr-ip24-int.msc.global-gateway.net.nz", 
-      "pachub.wwbr3.global-gateway.net.nz", 
-      "sprint-csd-comb.tkcr4.global-gateway.net.nz", 
-      "vector-dom.tkcr4.global-gateway.net.nz", 
-      "vocus-dom.tkcr5.global-gateway.net.nz", 
-      "wxc-dom.akcr10.global-gateway.net.nz", 
-      "x1-1-1-200.akcr11.global-gateway.net.nz", 
-      "x2-0-1-200.tkcr5.global-gateway.net.nz", 
-      "xe-0-0-7-3.sjbr3.global-gateway.net.nz", 
-      "xe-2-3-1-115.tkbr11.global-gateway.net.nz", 
-      "xe0-0-0.tkbr12.global-gateway.net.nz", 
-      "xe0-0-0.wwbr3.global-gateway.net.nz", 
-      "xe0-0-1.sgbr3.global-gateway.net.nz", 
-      "xe0-0-2.tkbr12.global-gateway.net.nz", 
-      "xe0-0-4.sgbr3.global-gateway.net.nz", 
-      "xe0-0-4.tkbr12.global-gateway.net.nz", 
-      "xe0-0-9.tkbr12.global-gateway.net.nz", 
-      "xe1-2-1-200.tkcr5.global-gateway.net.nz", 
-      "xe1-3-2-200.akcr11.global-gateway.net.nz", 
-      "xe2-3-1-104.tkcr5.global-gateway.net.nz", 
-      "xe2-3-1.lebr7.global-gateway.net.nz", 
-      "xe7-0-1-10.lebr7.global-gateway.net.nz", 
-      "xe7-0-2.sgbr3.global-gateway.net.nz", 
-      "xe7-0-5.tkbr12.global-gateway.net.nz", 
-      "xe7-0-7.tkbr12.global-gateway.net.nz", 
-      "xe8-0-3.tkbr12.global-gateway.net.nz", 
-      "xe8-0-5-0.tkbr12.global-gateway.net.nz"
+      "mdr-ip24-int.msc.global-gateway.net.nz"
     ]
   }, 
   "ihug.net": {
@@ -405,17 +414,25 @@
       "tuatara.manux.net.nz"
     ]
   }, 
+  "massey": {
+    "vlan2100": [
+      "it036660-vlan2100.massey.ac.nz", 
+      "it036663-vlan2100.massey.ac.nz"
+    ], 
+    "vlan2101": [
+      "it028230-vlan2101.massey.ac.nz", 
+      "it028231-vlan2101.massey.ac.nz"
+    ], 
+    "vlan802": [
+      "it028229-vlan802.massey.ac.nz", 
+      "it028230-vlan802.massey.ac.nz", 
+      "it028231-vlan802.massey.ac.nz", 
+      "it036660-vlan802.massey.ac.nz"
+    ]
+  }, 
   "massey.ac.nz": {
     "?": [
       "it028217-ge0-0.massey.ac.nz", 
-      "it028229-vlan802.massey.ac.nz", 
-      "it028230-vlan2101.massey.ac.nz", 
-      "it028230-vlan802.massey.ac.nz", 
-      "it028231-vlan2101.massey.ac.nz", 
-      "it028231-vlan802.massey.ac.nz", 
-      "it036660-vlan2100.massey.ac.nz", 
-      "it036660-vlan802.massey.ac.nz", 
-      "it036663-vlan2100.massey.ac.nz", 
       "ns-proxy1.massey.ac.nz", 
       "tur-cfw1-external.massey.ac.nz", 
       "wel-cfw1-external.massey.ac.nz"
@@ -506,6 +523,32 @@
     "?": [
       "gw.nzrs.net.nz", 
       "vpn-main.nzrs.net.nz"
+    ]
+  }, 
+  "nztechnologygroup": {
+    "alb-br1": [
+      "e1-21-alb-br1.nztechnologygroup.com"
+    ], 
+    "alb-cr1": [
+      "ge-0-1-22-alb-cr1.nztechnologygroup.com"
+    ], 
+    "alb-cr2": [
+      "ge-0-1-21-alb-cr2.nztechnologygroup.com"
+    ], 
+    "mdr-cr1": [
+      "ge-0-0-0-34-mdr-cr1.nztechnologygroup.com", 
+      "ge-0-0-3-10-10-mdr-cr1.nztechnologygroup.com"
+    ], 
+    "mdr-cr2": [
+      "ge-0-0-0-35-mdr-cr2.nztechnologygroup.com"
+    ], 
+    "sky-cr2": [
+      "sfp9-sky-cr2.nztechnologygroup.com"
+    ]
+  }, 
+  "nztechnologygroup.com": {
+    "?": [
+      "114-134-165-234.static.nztechnologygroup.com"
     ]
   }, 
   "odyssey.net.nz": {
@@ -600,11 +643,6 @@
       "ip202-27-219-98.satlan.co.nz"
     ]
   }, 
-  "sfp9-sky-cr2.nztechnologygroup.com": {
-    "?": [
-      "sfp9-sky-cr2.nztechnologygroup.com"
-    ]
-  }, 
   "snap": {
     "?": [
       "111-69-1-254.core.snap.net.nz", 
@@ -664,16 +702,6 @@
       "ip-120-136-54-180.solarix.net.nz", 
       "ip-120-136-54-220.solarix.net.nz", 
       "ip-120-136-54-221.solarix.net.nz"
-    ]
-  }, 
-  "static.nztechnologygroup.com": {
-    "?": [
-      "114-134-165-234.static.nztechnologygroup.com"
-    ]
-  }, 
-  "syd.dtsanz.com": {
-    "?": [
-      "v891-tt.cr4.syd.dtsanz.com"
     ]
   }, 
   "telstraclear.net": {

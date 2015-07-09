@@ -32,8 +32,26 @@ def frouter(company, domain):
         domain = domain.split(".")
         return domain[0] + domain[1]
 
+    # XXXXXXXX.akcr11.global-gateway.net.nz --> akcr11
+    elif company == "global-gateway":
+        domain = re.search(regexes[company], domain).group()
+        domain = domain.split(".")
+        return domain[0]
+
+    # XXXXXXXXX-vlan2100.massey.ac.nz" --> vlan2100
+    elif company == "massey":
+        domain = re.search(regexes[company], domain).group()
+        domain = domain.split(".")
+        return domain[0][1:] # strip the '-'
+
     elif company == "nzix":
         return "?"
+
+    # XXXXXXX-mdr-cr1.nztechnologygroup.com --> mdr-cr1
+    elif company == "nztechnologygroup":
+        domain = re.search(regexes[company], domain).group()
+        domain = domain.split(".")
+        return domain[0][1:] # strip the '-'
 
     # XXXXXXXXX.v4wlg0.acsdata.co.nz --> v4wlg0
     elif company == "acsdata":
@@ -59,7 +77,7 @@ def fcompany(domain):
     # If there isn't one, take company name by stripping hld.
     zones = domain.split(".")
 
-    if zones[-1] == "net": return ".".join(zones[-2:])
+    if zones[-1] in ["com","net"]: return ".".join(zones[-2:])
     else: return ".".join(zones[-3:])
 
 def main():

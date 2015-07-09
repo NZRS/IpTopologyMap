@@ -2,7 +2,8 @@ __author__ = 'aaron'
 
 import re
 
-companies = ["vocus", "fx", "snap", "nzix", "acsdata"]
+companies = ["vocus", "fx", "snap", "nzix", "acsdata", "global-gateway", "massey",
+             "nztechnologygroup"]
 
 def _st(len=None):
     '''
@@ -53,9 +54,21 @@ def regex_company(company):
         xchange = "(" + "|".join(exchanges) + ")"
         return "(" + xchange + "\.nzix\.net)"
 
+    # massey routers look like this: XXXXXXXX-vlan802.massey.ac.nz
+    elif company == "massey":
+        return "(-vlan" + _nm() + "\.massey\.ac\.nz)"
+
+    # global-gateway routers look like this: XXXXXX.akbr7.global-gateway.net.nz
+    elif company == "global-gateway":
+        return "(" + _st(4) + _nm() + "\.global-gateway\.net\.nz)"
+
     # acsdata routers look like this: XXXXXXX.v4akl1.acsdata.co.nz
     elif company == "acsdata":
         return "(v" + _nm() + _st(3) + _nm() + "\.acsdata\.co\.nz)"
+
+    # nztechnology routers look like this: XXXXXXXX-mdr-cr1.nztechnologygroup.com
+    elif company == "nztechnologygroup":
+        return "(-" + _st(3) + "-" + _st(2) + _nm(1) + "\.nztechnologygroup\.com)"
 
     else:
         raise ValueError("No regex for {}".format(company))
