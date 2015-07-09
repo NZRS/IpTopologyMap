@@ -3,7 +3,7 @@ __author__ = 'aaron'
 import json
 
 #  Construct an IP -> Domain mapping.
-with open("map", "rb") as f:
+with open("reverse-lookup.json", "rb") as f:
     domain2ip = json.load(f)
     ips2domains = { v["name"]:k for k,v in domain2ip.items() }
 
@@ -12,7 +12,7 @@ with open("domains-grouped.json", "rb") as f:
     companies = json.load(f)
 
 # Lists of IPs which should be grouped together.
-groups = []
+ips2routers = {}
 
 # Turn domains back into IPs.
 for company in companies:
@@ -20,10 +20,10 @@ for company in companies:
     routers = companies[company]
     for router in routers:
         if router == "?": continue
-        domains = routers[router]
-        ips = [ips2domains[x] for x in domains]
-        groups.append(ips)
+        for domain in routers[router]:
+            ip = ips2domains[domain]
+            ips2routers[ip] = router
 
 # Output.
-with open("reverse-lookup.json", "wb") as f:
-    json.dump(groups, f, indent=2)
+with open("ip2router.json", "wb") as f:
+    json.dump(ips2routers, f, indent=2)
