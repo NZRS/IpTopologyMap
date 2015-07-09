@@ -3,7 +3,7 @@ __author__ = 'aaron'
 import re
 
 companies = ["vocus", "fx", "snap", "nzix", "acsdata", "global-gateway", "massey",
-             "nztechnologygroup"]
+             "nztechnologygroup", "orcon", "reannz", "tranzpeer"]
 
 def _st(len=None):
     '''
@@ -58,13 +58,25 @@ def regex_company(company):
     elif company == "massey":
         return "(-vlan" + _nm() + "\.massey\.ac\.nz)"
 
+    # reannz routers look like this: XXXXXXXX.anr01-akl.reannz.co.nz
+    elif company == "reannz":
+        return "(" + _st(3) + _nm() + "-" + _st(3) + "\.reannz\.co\.nz)"
+
     # global-gateway routers look like this: XXXXXX.akbr7.global-gateway.net.nz
     elif company == "global-gateway":
         return "(" + _st(4) + _nm() + "\.global-gateway\.net\.nz)"
 
+    # orcon routers look like this: XXXXXXX.cre2.nct.orcon.net.nz
+    elif company == "orcon":
+        return "(" + _st(3) + _nm(1) + "\." + _st(3) + "\.orcon\.net\.nz)"
+
     # acsdata routers look like this: XXXXXXX.v4akl1.acsdata.co.nz
     elif company == "acsdata":
         return "(v" + _nm() + _st(3) + _nm() + "\.acsdata\.co\.nz)"
+
+    # tranzpeer routers look like this: XXXXXX.cpcak4-r1.tranzpeer.net
+    elif company == "tranzpeer":
+        return "(" + _st(5) + _nm() + "-r" + _nm() + "\.tranzpeer\.net)"
 
     # nztechnology routers look like this: XXXXXXXX-mdr-cr1.nztechnologygroup.com
     elif company == "nztechnologygroup":

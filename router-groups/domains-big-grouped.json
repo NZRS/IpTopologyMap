@@ -572,25 +572,43 @@
       "mailsender.opus.co.nz"
     ]
   }, 
-  "orcon.net.nz": {
-    "?": [
+  "orcon": {
+    "bng1nct": [
       "1-1-1.bng1.nct.orcon.net.nz", 
+      "121-99-252-1.bng1.nct.orcon.net.nz", 
+      "121-99-27-207.bng1.nct.orcon.net.nz"
+    ], 
+    "bng1tvc": [
       "1-1-1.bng1.tvc.orcon.net.nz", 
       "121-99-133-165.bng1.tvc.orcon.net.nz", 
-      "121-99-252-1.bng1.nct.orcon.net.nz", 
-      "121-99-27-207.bng1.nct.orcon.net.nz", 
-      "cp-ntch.orcon.net.nz", 
-      "ge-0-1-1-0.cre2.nct.orcon.net.nz", 
+      "llu.bng1.tvc.orcon.net.nz"
+    ], 
+    "cre1mdr": [
+      "xe-3-2-0.cre1.mdr.orcon.net.nz"
+    ], 
+    "cre1nct": [
       "ge-0-1-5-0.cre1.nct.orcon.net.nz", 
-      "ge-0-3-0-0.cre1.sky.orcon.net.nz", 
-      "llu.bng1.tvc.orcon.net.nz", 
-      "xe-0-0-1-0.mer2.nct.orcon.net.nz", 
       "xe-1-0-0.cre1.nct.orcon.net.nz", 
-      "xe-1-0-0.cre2.nct.orcon.net.nz", 
-      "xe-2-2-0.cre1.nct.orcon.net.nz", 
-      "xe-3-2-0.cre1.mdr.orcon.net.nz", 
-      "xe-3-3-0.cre1.sky.orcon.net.nz", 
+      "xe-2-2-0.cre1.nct.orcon.net.nz"
+    ], 
+    "cre1sky": [
+      "ge-0-3-0-0.cre1.sky.orcon.net.nz", 
+      "xe-3-3-0.cre1.sky.orcon.net.nz"
+    ], 
+    "cre2nct": [
+      "ge-0-1-1-0.cre2.nct.orcon.net.nz", 
+      "xe-1-0-0.cre2.nct.orcon.net.nz"
+    ], 
+    "cre2net": [
       "xe-4-2-1-0-cre2.net.orcon.net.nz"
+    ], 
+    "mer2nct": [
+      "xe-0-0-1-0.mer2.nct.orcon.net.nz"
+    ]
+  }, 
+  "orcon.net.nz": {
+    "?": [
+      "cp-ntch.orcon.net.nz"
     ]
   }, 
   "paradise.gen.nz": {
@@ -614,10 +632,16 @@
       "soa1.qsi.net.nz"
     ]
   }, 
+  "reannz": {
+    "anr01-akl": [
+      "anr01-akl.reannz.co.nz"
+    ], 
+    "anr02-wlg": [
+      "anr02-wlg.reannz.co.nz"
+    ]
+  }, 
   "reannz.co.nz": {
     "?": [
-      "anr01-akl.reannz.co.nz", 
-      "anr02-wlg.reannz.co.nz", 
       "dhcp-210-7-44-28.reannz.co.nz"
     ]
   }, 
@@ -747,37 +771,53 @@
       "nn.edge.tpnet.co.nz"
     ]
   }, 
+  "tranzpeer": {
+    "cpcak3-r1": [
+      "ad-cpcak3-r1.tranzpeer.net", 
+      "ae-4-10.cpcak3-r1.tranzpeer.net", 
+      "ae-5-10.cpcak3-r1.tranzpeer.net", 
+      "core0.cpcak3-r1.tranzpeer.net", 
+      "core2.cpcak3-r1.tranzpeer.net", 
+      "cpcak3-r1.tranzpeer.net"
+    ], 
+    "cpcak3-r2": [
+      "ad-cpcak3-r2.tranzpeer.net", 
+      "ae-5-10.cpcak3-r2.tranzpeer.net", 
+      "core1.cpcak3-r2.tranzpeer.net", 
+      "core2.cpcak3-r2.tranzpeer.net", 
+      "xe-4-0-1-0.cpcak3-r2.tranzpeer.net"
+    ], 
+    "cpcak4-r1": [
+      "ae5-2.cpcak4-r1.tranzpeer.net", 
+      "core0.cpcak4-r1.tranzpeer.net", 
+      "core1.cpcak4-r1.tranzpeer.net", 
+      "pts-n.cpcak4-r1.tranzpeer.net", 
+      "pts-s.cpcak4-r1.tranzpeer.net", 
+      "xe-4-1-0-0.cpcak4-r1.tranzpeer.net"
+    ], 
+    "cpcak6-r1": [
+      "xe-0-0-0-0.cpcak6-r1.tranzpeer.net"
+    ], 
+    "cpcpn2-r1": [
+      "xe-0-0-3-478.cpcpn2-r1.tranzpeer.net"
+    ], 
+    "cpcwn2-r1": [
+      "xe-0-0-3-1643.cpcwn2-r1.tranzpeer.net"
+    ], 
+    "cpcwn2-r2": [
+      "xe-0-0-1-0.cpcwn2-r2.tranzpeer.net"
+    ]
+  }, 
   "tranzpeer.net": {
     "?": [
       "2talk.peer.tranzpeer.net", 
-      "ad-cpcak3-r1.tranzpeer.net", 
-      "ad-cpcak3-r2.tranzpeer.net", 
-      "ae-4-10.cpcak3-r1.tranzpeer.net", 
-      "ae-5-10.cpcak3-r1.tranzpeer.net", 
-      "ae-5-10.cpcak3-r2.tranzpeer.net", 
       "ae.cpcak-nthc-r1.tranzpeer.net", 
-      "ae5-2.cpcak4-r1.tranzpeer.net", 
-      "core0.cpcak3-r1.tranzpeer.net", 
-      "core0.cpcak4-r1.tranzpeer.net", 
-      "core1.cpcak3-r2.tranzpeer.net", 
-      "core1.cpcak4-r1.tranzpeer.net", 
-      "core2.cpcak3-r1.tranzpeer.net", 
-      "core2.cpcak3-r2.tranzpeer.net", 
       "cpcak3-r1-ad.tranzpeer.net", 
-      "cpcak3-r1.tranzpeer.net", 
       "cpcak3-r2-ad.tranzpeer.net", 
-      "pts-n.cpcak4-r1.tranzpeer.net", 
-      "pts-s.cpcak4-r1.tranzpeer.net", 
       "v2.cpcak4-bng1.tranzpeer.net", 
       "v3.cpcwn2-bng1.tranzpeer.net", 
       "v4.cpcwn2-bng1.tranzpeer.net", 
-      "vlan7-cpcak3-e1.tranzpeer.net", 
-      "xe-0-0-0-0.cpcak6-r1.tranzpeer.net", 
-      "xe-0-0-1-0.cpcwn2-r2.tranzpeer.net", 
-      "xe-0-0-3-1643.cpcwn2-r1.tranzpeer.net", 
-      "xe-0-0-3-478.cpcpn2-r1.tranzpeer.net", 
-      "xe-4-0-1-0.cpcak3-r2.tranzpeer.net", 
-      "xe-4-1-0-0.cpcak4-r1.tranzpeer.net"
+      "vlan7-cpcak3-e1.tranzpeer.net"
     ]
   }, 
   "unleash.net.nz": {

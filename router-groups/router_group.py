@@ -20,7 +20,7 @@ def frouter(company, domain):
 
     # XXXXXX.wnmur-rt1.fx.net.nz --> wnmur-rt1
     if company == "fx":
-        domain = re.search(regexes["fx"], domain).group()
+        domain = re.search(regexes[company], domain).group()
         return domain.rstrip(".fx.net.nz")
 
     elif company == "snap":
@@ -28,7 +28,7 @@ def frouter(company, domain):
 
     # XXXXXXXX.akl05.akl.VOCUS.net.nz --> akl105.akl
     elif company == "vocus":
-        domain = re.search(regexes["vocus"], domain).group()
+        domain = re.search(regexes[company], domain).group()
         domain = domain.split(".")
         return domain[0] + domain[1]
 
@@ -38,7 +38,7 @@ def frouter(company, domain):
         domain = domain.split(".")
         return domain[0]
 
-    # XXXXXXXXX-vlan2100.massey.ac.nz" --> vlan2100
+    # XXXXXXXXX-vlan2100.massey.ac.nz --> vlan2100
     elif company == "massey":
         domain = re.search(regexes[company], domain).group()
         domain = domain.split(".")
@@ -46,6 +46,18 @@ def frouter(company, domain):
 
     elif company == "nzix":
         return "?"
+
+    # XXXXXXX.cpcak4-r1.tranzpeer.net --> cpcak4-r1
+    elif company == "tranzpeer":
+        domain = re.search(regexes[company], domain).group()
+        domain = domain.split(".")
+        return domain[0]
+
+    # XXXXXXX.anr01-akl.reannz.co.nz --> anr01-akl
+    elif company == "reannz":
+        domain = re.search(regexes[company], domain).group()
+        domain = domain.split(".")
+        return domain[0]
 
     # XXXXXXX-mdr-cr1.nztechnologygroup.com --> mdr-cr1
     elif company == "nztechnologygroup":
@@ -58,6 +70,12 @@ def frouter(company, domain):
         domain = re.search(regexes[company], domain).group()
         domain = domain.split(".")
         return domain[0]
+
+    # XXXXXXXX.cre1.nct.orcon.net.nz
+    elif company == "orcon":
+        domain = re.search(regexes[company], domain).group()
+        domain = domain.split(".")
+        return domain[0] + domain[1]
 
     else:
         return "?"
