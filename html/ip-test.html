@@ -18,7 +18,7 @@
     </style>
 </head>
 <body>
-    <input type="button" onclick="clusterByAs()" value="Cluster all nodes By AS"> <br />
+    <input type="button" onclick="clusterAllByAs()" value="Cluster all nodes By AS"> <br />
     <div id="ipvis"></div>
     <div id="config"></div>
 
@@ -28,11 +28,6 @@
     <script type="text/javascript">
         var vis_nodes = new vis.DataSet(nodes);
         var vis_edges = new vis.DataSet(edges);
-        var lastClusterZoomLevel = 0;
-        var clusterFactor = 0.9;
-        var clusterIndex = 0;
-        var clusters = [];
-
 
         var container = document.getElementById('ipvis');
         var options = {
@@ -59,7 +54,7 @@
                 "barnesHut": {
                     "gravitationalConstant": -17500,
                     "centralGravity": 1.7,
-                    "springLength": 195,
+                    "springLength": 30,
                     "springConstant": 0.05,
                     "damping": 0.75,
                     "avoidOverlap": 0.1
@@ -74,13 +69,30 @@
 
         var data = {nodes:vis_nodes, edges: vis_edges}
         var network = new vis.Network(container, data, options);
-        clusterByAs();
+        // clusterAllByAs();
 
-        /*
-        network.once('initRedraw', function() {
-            clusterByAs();
-        });
-        */
+        function clusterByAs(as) {
+            // console.log("Clustering nodes in AS " + as);
+            clusterOptionsByData = {
+              joinCondition: function (childOptions) {
+                  /*
+                  return network.isCluster(params.nodes[0]) || childOptions.AS == as; // Cluster the nodes matching this AS
+                  */
+                  return childOptions.AS == as;
+              },
+              processProperties: function (clusterOptions, childNodes, childEdges) {
+                  var totalMass = 0;
+                  for (var i = 0; i < childNodes.length; i++) {
+                      totalMass += childNodes[i].mass;
+                  }
+                  clusterOptions.mass = totalMass;
+                  clusterOptions.value = childNodes.length;
+                  return clusterOptions;
+              },
+              clusterNodeProperties: {id: as, borderWidth: 2, shape: 'dot', label: 'AS ' + as, group: as}
+            }
+            network.cluster(clusterOptionsByData);
+        }
 
         // if we click on a node, we want to open it up!
         network.on("selectNode", function (params) {
@@ -88,47 +100,14 @@
                 if (network.isCluster(params.nodes[0]) == true) {
                     network.openCluster(params.nodes[0])
                 } else {
-                    var as = data.nodes._data[params.nodes[0]].AS;
-                    console.log("Clustering nodes in AS " + as);
-                    clusterOptionsByData = {
-                      joinCondition: function (childOptions) {
-                          return network.isCluster(params.nodes[0]) || childOptions.AS == as; // Cluster the nodes matching this AS
-                      },
-                      processProperties: function (clusterOptions, childNodes, childEdges) {
-                          var totalMass = 0;
-                          for (var i = 0; i < childNodes.length; i++) {
-                              totalMass += childNodes[i].mass;
-                          }
-                          clusterOptions.mass = totalMass;
-                          return clusterOptions;
-                      },
-                      clusterNodeProperties: {id: as, borderWidth: 3, shape: 'circle', label: 'AS ' + as}
-                    }
-                    network.cluster(clusterOptionsByData);
+                    clusterByAs(data.nodes._data[params.nodes[0]].AS);
                 }
             }
         });
 
-        function clusterByAs() {
-          network.setData(data);
-          var clusterOptionsByData;
+        function clusterAllByAs() {
           for (var i = 0; i < ases.length; i++) {
-              var as = ases[i];
-              clusterOptionsByData = {
-                  joinCondition: function (childOptions) {
-                      return childOptions.AS == as; // The AS is a property of the node
-                  },
-                  processProperties: function (clusterOptions, childNodes, childEdges) {
-                      var totalMass = 0;
-                      for (var i = 0; i < childNodes.length; i++) {
-                          totalMass += childNodes[i].mass;
-                      }
-                      clusterOptions.mass = totalMass;
-                      return clusterOptions;
-                  },
-                  clusterNodeProperties: {id: as, borderWidth: 3, shape: 'circle', label: 'AS ' + as}
-              }
-              network.cluster(clusterOptionsByData);
+              clusterByAs(ases[i]);
           }
         }
     </script>

@@ -11,6 +11,10 @@ args = parser.parse_args()
 with open("{}/ip.json".format(args.datadir)) as ip_file:
     graph_json_dump = json.load(ip_file)
 
+print "Input graph information"
+print "Nodes = ", len(graph_json_dump['nodes'])
+print "Edges = ", len(graph_json_dump['links'])
+
 # Preparing for vis.js format
 ## Create a graph using igraph
 VG = igraph.Graph.Formula()
@@ -34,13 +38,18 @@ vis_nodes = []
 vis_edges = []
 vis_ases = set()
 for n in VG.vs:
-    vis_nodes.append({'id': n['name'], 'group': n['group'], 'title': '', 'AS': n['AS'], 'mass': 1,
+    vis_nodes.append({'id': n['name'], 'group': n['AS'], 'title': '', 'AS': n['AS'], 'mass': 1,
                       'label': n['label']})
 # , 'x': 200*layout[n.index][0], 'y': 200*layout[n.index][1]})
     vis_ases.add(n['AS'])
 
 for e in VG.es:
-    vis_edges.append({'to': VG.vs[e.target]['name'], 'from': VG.vs[e.source]['name']})
+    t = VG.vs[e.target]['name']
+    s = VG.vs[e.source]['name']
+    if t != s:
+        vis_edges.append({'to': t, 'from': s})
+    else:
+        print "** Warning: skipping self-edge {} -> {}".format(s, t)
 
 with open("{}/ip-network-graph.js".format(args.datadir), 'wb') as js_file:
     js_file.write("var nodes = {};\n".format(json.dumps(vis_nodes)))

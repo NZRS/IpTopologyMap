@@ -24,6 +24,6 @@
     "data"
   ],
   "dependencies": {
-    "vis": "~4.3.0"
+    "vis": "~4.4.0"
   }
 }
