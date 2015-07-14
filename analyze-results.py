@@ -79,9 +79,16 @@ def invalid_group(g):
     return g in ['UNK', 'X0', 'Priv']
 
 
+def valid_percent(s):
+    v = float(s)
+    if v < 0.01 or v > 100:
+        raise argparse.ArgumentTypeError("sample value out of range [0.01, 100]")
+
+    return v
+
 parser = argparse.ArgumentParser("Analyses results")
 parser.add_argument('--datadir', required=True, help="directory to read input and save output")
-parser.add_argument('--sample', help="Use a sample instead of all traces available", action="store_true")
+parser.add_argument('--sample', type=valid_percent, help="Use a sample instead of all traces available")
 args = parser.parse_args()
 
 addr_list = set()
@@ -92,7 +99,9 @@ with open(res_file, 'rb') as res_fd:
     res_blob = json.load(res_fd)
 
     if args.sample:
-        res_blob = random.sample(res_blob, 1000)
+        sample_sz = int((args.sample/100)*len(res_blob))
+        print "INFO: Picking sample {} of {}".format(sample_sz, len(res_blob))
+        res_blob = random.sample(res_blob, sample_sz)
 
 G = nx.Graph()
 bgp = nx.Graph()
