@@ -5,3 +5,5 @@ read-key.txt
 .idea/
 # Using Bower for web components
 bower_components/
+# IPython notebooks
+.ipynb_checkpoints

@@ -1,0 +1,502 @@
+{
+  "Probe 10095": {
+    "ips_anomalous": [], 
+    "ips_unknown": [
+      "Private 10095-1"
+    ], 
+    "num_anomalies": 0, 
+    "num_unknowns": 1, 
+    "pathLength": 24
+  }, 
+  "Probe 1018": {
+    "ips_anomalous": [
+      "134.159.174.41"
+    ], 
+    "ips_unknown": [
+      "Private 1018-1", 
+      "Hop 1018-2"
+    ], 
+    "num_anomalies": 1, 
+    "num_unknowns": 2, 
+    "pathLength": 18
+  }, 
+  "Probe 1022": {
+    "ips_anomalous": [
+      "131.203.240.225", 
+      "202.53.187.201", 
+      "202.53.187.202"
+    ], 
+    "ips_unknown": [
+      "Private 1022-1"
+    ], 
+    "num_anomalies": 3, 
+    "num_unknowns": 1, 
+    "pathLength": 16
+  }, 
+  "Probe 10269": {
+    "ips_anomalous": [
+      "89.149.183.225", 
+      "141.136.100.166", 
+      "2.16.216.51"
+    ], 
+    "ips_unknown": [], 
+    "num_anomalies": 3, 
+    "num_unknowns": 0, 
+    "pathLength": 11
+  }, 
+  "Probe 1050": {
+    "ips_anomalous": [
+      "195.22.211.193", 
+      "195.22.211.193", 
+      "89.221.34.234", 
+      "2.16.216.51"
+    ], 
+    "ips_unknown": [], 
+    "num_anomalies": 4, 
+    "num_unknowns": 0, 
+    "pathLength": 17
+  }, 
+  "Probe 10650": {
+    "ips_anomalous": [
+      "134.159.174.37"
+    ], 
+    "ips_unknown": [
+      "Private 10650-1", 
+      "Hop 10650-2"
+    ], 
+    "num_anomalies": 1, 
+    "num_unknowns": 2, 
+    "pathLength": 18
+  }, 
+  "Probe 10658": {
+    "ips_anomalous": [
+      "134.159.174.41"
+    ], 
+    "ips_unknown": [
+      "Private 10658-1", 
+      "Hop 10658-2"
+    ], 
+    "num_anomalies": 1, 
+    "num_unknowns": 2, 
+    "pathLength": 18
+  }, 
+  "Probe 1093": {
+    "ips_anomalous": [], 
+    "ips_unknown": [
+      "Private 1093-1", 
+      "Hop 1093-3"
+    ], 
+    "num_anomalies": 0, 
+    "num_unknowns": 2, 
+    "pathLength": 24
+  }, 
+  "Probe 11016": {
+    "ips_anomalous": [], 
+    "ips_unknown": [
+      "Private 11016-1"
+    ], 
+    "num_anomalies": 0, 
+    "num_unknowns": 1, 
+    "pathLength": 14
+  }, 
+  "Probe 11744": {
+    "ips_anomalous": [
+      "134.159.174.41"
+    ], 
+    "ips_unknown": [
+      "Private 11744-1", 
+      "Hop 11744-2"
+    ], 
+    "num_anomalies": 1, 
+    "num_unknowns": 2, 
+    "pathLength": 18
+  }, 
+  "Probe 11752": {
+    "ips_anomalous": [], 
+    "ips_unknown": [
+      "Private 11752-1"
+    ], 
+    "num_anomalies": 0, 
+    "num_unknowns": 1, 
+    "pathLength": 24
+  }, 
+  "Probe 11753": {
+    "ips_anomalous": [
+      "192.203.154.120", 
+      "192.203.154.145"
+    ], 
+    "ips_unknown": [
+      "Private 11753-1", 
+      "Private 11753-2", 
+      "Private 11753-3", 
+      "Private 11753-4", 
+      "Hop 11753-10", 
+      "Private 11753-11"
+    ], 
+    "num_anomalies": 2, 
+    "num_unknowns": 6, 
+    "pathLength": 12
+  }, 
+  "Probe 11843": {
+    "ips_anomalous": [], 
+    "ips_unknown": [
+      "Private 11843-2", 
+      "Private 11843-3"
+    ], 
+    "num_anomalies": 0, 
+    "num_unknowns": 2, 
+    "pathLength": 19
+  }, 
+  "Probe 11947": {
+    "ips_anomalous": [], 
+    "ips_unknown": [
+      "Private 11947-2", 
+      "Private 11947-3"
+    ], 
+    "num_anomalies": 0, 
+    "num_unknowns": 2, 
+    "pathLength": 17
+  }, 
+  "Probe 12036": {
+    "ips_anomalous": [
+      "89.149.183.225", 
+      "141.136.100.166", 
+      "2.16.216.51"
+    ], 
+    "ips_unknown": [], 
+    "num_anomalies": 3, 
+    "num_unknowns": 0, 
+    "pathLength": 14
+  }, 
+  "Probe 12171": {
+    "ips_anomalous": [
+      "89.149.183.225", 
+      "141.136.100.166", 
+      "2.16.216.51"
+    ], 
+    "ips_unknown": [], 
+    "num_anomalies": 3, 
+    "num_unknowns": 0, 
+    "pathLength": 14
+  }, 
+  "Probe 12197": {
+    "ips_anomalous": [], 
+    "ips_unknown": [
+      "Private 12197-2"
+    ], 
+    "num_anomalies": 0, 
+    "num_unknowns": 1, 
+    "pathLength": 20
+  }, 
+  "Probe 12403": {
+    "ips_anomalous": [], 
+    "ips_unknown": [
+      "Private 12403-1"
+    ], 
+    "num_anomalies": 0, 
+    "num_unknowns": 1, 
+    "pathLength": 25
+  }, 
+  "Probe 12754": {
+    "ips_anomalous": [], 
+    "ips_unknown": [
+      "Private 12754-1"
+    ], 
+    "num_anomalies": 0, 
+    "num_unknowns": 1, 
+    "pathLength": 26
+  }, 
+  "Probe 12793": {
+    "ips_anomalous": [], 
+    "ips_unknown": [
+      "Private 12793-2", 
+      "Private 12793-3"
+    ], 
+    "num_anomalies": 0, 
+    "num_unknowns": 2, 
+    "pathLength": 18
+  }, 
+  "Probe 13104": {
+    "ips_anomalous": [], 
+    "ips_unknown": [
+      "Private 13104-1", 
+      "Hop 13104-8"
+    ], 
+    "num_anomalies": 0, 
+    "num_unknowns": 2, 
+    "pathLength": 20
+  }, 
+  "Probe 14473": {
+    "ips_anomalous": [], 
+    "ips_unknown": [
+      "Private 14473-1"
+    ], 
+    "num_anomalies": 0, 
+    "num_unknowns": 1, 
+    "pathLength": 16
+  }, 
+  "Probe 14884": {
+    "ips_anomalous": [], 
+    "ips_unknown": [
+      "Private 14884-1", 
+      "Hop 14884-4", 
+      "Hop 14884-8", 
+      "Hop 14884-9", 
+      "Hop 14884-10", 
+      "Hop 14884-15", 
+      "Hop 14884-16", 
+      "Hop 14884-17", 
+      "Hop 14884-18", 
+      "Hop 14884-19"
+    ], 
+    "num_anomalies": 0, 
+    "num_unknowns": 10, 
+    "pathLength": 21
+  }, 
+  "Probe 15074": {
+    "ips_anomalous": [
+      "195.2.7.6", 
+      "195.2.7.5", 
+      "195.2.28.49", 
+      "195.2.30.46", 
+      "195.2.28.154", 
+      "195.2.10.145"
+    ], 
+    "ips_unknown": [
+      "Private 15074-1"
+    ], 
+    "num_anomalies": 6, 
+    "num_unknowns": 1, 
+    "pathLength": 15
+  }, 
+  "Probe 17559": {
+    "ips_anomalous": [
+      "192.100.53.7", 
+      "192.100.53.77"
+    ], 
+    "ips_unknown": [
+      "Private 17559-1"
+    ], 
+    "num_anomalies": 2, 
+    "num_unknowns": 1, 
+    "pathLength": 23
+  }, 
+  "Probe 17565": {
+    "ips_anomalous": [
+      "134.159.174.41"
+    ], 
+    "ips_unknown": [
+      "Private 17565-1"
+    ], 
+    "num_anomalies": 1, 
+    "num_unknowns": 1, 
+    "pathLength": 16
+  }, 
+  "Probe 17594": {
+    "ips_anomalous": [], 
+    "ips_unknown": [
+      "Private 17594-1", 
+      "Hop 17594-2", 
+      "Hop 17594-3", 
+      "Hop 17594-11"
+    ], 
+    "num_anomalies": 0, 
+    "num_unknowns": 4, 
+    "pathLength": 24
+  }, 
+  "Probe 19326": {
+    "ips_anomalous": [], 
+    "ips_unknown": [
+      "Private 19326-1"
+    ], 
+    "num_anomalies": 0, 
+    "num_unknowns": 1, 
+    "pathLength": 17
+  }, 
+  "Probe 21069": {
+    "ips_anomalous": [
+      "195.22.214.71", 
+      "195.22.214.71", 
+      "89.221.34.234", 
+      "2.16.216.51"
+    ], 
+    "ips_unknown": [], 
+    "num_anomalies": 4, 
+    "num_unknowns": 0, 
+    "pathLength": 16
+  }, 
+  "Probe 21073": {
+    "ips_anomalous": [
+      "192.100.53.6", 
+      "192.100.53.73", 
+      "192.100.53.45", 
+      "134.159.174.41"
+    ], 
+    "ips_unknown": [
+      "Private 21073-1"
+    ], 
+    "num_anomalies": 4, 
+    "num_unknowns": 1, 
+    "pathLength": 18
+  }, 
+  "Probe 22645": {
+    "ips_anomalous": [
+      "134.159.174.41"
+    ], 
+    "ips_unknown": [
+      "Private 22645-1", 
+      "Hop 22645-2"
+    ], 
+    "num_anomalies": 1, 
+    "num_unknowns": 2, 
+    "pathLength": 18
+  }, 
+  "Probe 22666": {
+    "ips_anomalous": [
+      "141.136.108.29", 
+      "141.136.100.166", 
+      "2.16.216.51"
+    ], 
+    "ips_unknown": [], 
+    "num_anomalies": 3, 
+    "num_unknowns": 0, 
+    "pathLength": 9
+  }, 
+  "Probe 22734": {
+    "ips_anomalous": [
+      "131.203.245.129", 
+      "202.53.187.202"
+    ], 
+    "ips_unknown": [
+      "Private 22734-1"
+    ], 
+    "num_anomalies": 2, 
+    "num_unknowns": 1, 
+    "pathLength": 18
+  }, 
+  "Probe 22755": {
+    "ips_anomalous": [], 
+    "ips_unknown": [
+      "Private 22755-1"
+    ], 
+    "num_anomalies": 0, 
+    "num_unknowns": 1, 
+    "pathLength": 25
+  }, 
+  "Probe 22769": {
+    "ips_anomalous": [], 
+    "ips_unknown": [
+      "Private 22769-1", 
+      "Hop 22769-3", 
+      "Hop 22769-10"
+    ], 
+    "num_anomalies": 0, 
+    "num_unknowns": 3, 
+    "pathLength": 23
+  }, 
+  "Probe 2570": {
+    "ips_anomalous": [], 
+    "ips_unknown": [
+      "Private 2570-1", 
+      "Hop 2570-12"
+    ], 
+    "num_anomalies": 0, 
+    "num_unknowns": 2, 
+    "pathLength": 25
+  }, 
+  "Probe 2935": {
+    "ips_anomalous": [], 
+    "ips_unknown": [
+      "Private 2935-1"
+    ], 
+    "num_anomalies": 0, 
+    "num_unknowns": 1, 
+    "pathLength": 20
+  }, 
+  "Probe 306": {
+    "ips_anomalous": [
+      "195.22.214.77", 
+      "89.221.34.234", 
+      "2.16.216.51"
+    ], 
+    "ips_unknown": [], 
+    "num_anomalies": 3, 
+    "num_unknowns": 0, 
+    "pathLength": 16
+  }, 
+  "Probe 3088": {
+    "ips_anomalous": [
+      "89.149.128.173"
+    ], 
+    "ips_unknown": [
+      "Private 3088-1"
+    ], 
+    "num_anomalies": 1, 
+    "num_unknowns": 1, 
+    "pathLength": 19
+  }, 
+  "Probe 3641": {
+    "ips_anomalous": [], 
+    "ips_unknown": [
+      "Private 3641-1", 
+      "Hop 3641-3"
+    ], 
+    "num_anomalies": 0, 
+    "num_unknowns": 2, 
+    "pathLength": 24
+  }, 
+  "Probe 4464": {
+    "ips_anomalous": [], 
+    "ips_unknown": [
+      "Private 4464-1", 
+      "Private 4464-2", 
+      "Private 4464-3"
+    ], 
+    "num_anomalies": 0, 
+    "num_unknowns": 3, 
+    "pathLength": 20
+  }, 
+  "Probe 4778": {
+    "ips_anomalous": [], 
+    "ips_unknown": [
+      "Private 4778-1", 
+      "Hop 4778-3", 
+      "Hop 4778-11"
+    ], 
+    "num_anomalies": 0, 
+    "num_unknowns": 3, 
+    "pathLength": 24
+  }, 
+  "Probe 6076": {
+    "ips_anomalous": [
+      "89.221.34.105", 
+      "89.221.34.105", 
+      "89.221.34.234", 
+      "2.16.216.51"
+    ], 
+    "ips_unknown": [], 
+    "num_anomalies": 4, 
+    "num_unknowns": 0, 
+    "pathLength": 18
+  }, 
+  "Probe 74": {
+    "ips_anomalous": [], 
+    "ips_unknown": [
+      "Private 74-1", 
+      "Private 74-2", 
+      "Hop 74-3"
+    ], 
+    "num_anomalies": 0, 
+    "num_unknowns": 3, 
+    "pathLength": 24
+  }, 
+  "Probe 93": {
+    "ips_anomalous": [], 
+    "ips_unknown": [
+      "Private 93-2"
+    ], 
+    "num_anomalies": 0, 
+    "num_unknowns": 1, 
+    "pathLength": 19
+  }
+}
