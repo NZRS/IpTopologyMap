@@ -1,0 +1,2 @@
+1161/9486 paths departed NZ (0.12%)
+Hops went to 66 unique IPs.
