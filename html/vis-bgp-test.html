@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html>
+<head lang="en">
+    <meta charset="UTF-8">
+    <title>VisJS BGP Test</title>
+    <style type="text/css">
+    #ipvis {
+      height: 600px;
+      width: 1200px;
+      border: 1px solid lightgray;
+      background: black;
+    }
+    #config {
+      float: left;
+      width: 400px;
+      height: 600px;
+    }
+
+    </style>
+</head>
+<body>
+    <div id="ipvis"></div>
+    <div id="config"></div>
+
+    <script src="/scripts/vis.min.js"></script>
+    <script src="/misc/data/vis-bgp-graph.js"></script>
+
+    <script type="text/javascript">
+        var vis_nodes = new vis.DataSet(nodes);
+        var vis_edges = new vis.DataSet(edges);
+
+        var container = document.getElementById('ipvis');
+        var options = {
+            autoResize: true,
+            width: '100%',
+            height: '100%',
+            layout: {
+                randomSeed: 8
+            },
+            nodes: {
+                shape: 'dot',
+                size: 20,
+                physics: true,
+                borderWidth: 1,
+                font: {
+                    color: 'white',
+                    size: 10
+                }
+            },
+            edges: {
+                smooth: false,
+                width: 2
+            },
+            groups: {
+                AU: {
+                    color: { background: 'yellow' }
+                },
+                NZ: {
+                    color: { background: 'grey' }
+                },
+                IX: {
+                    color: { background: 'red' }
+                },
+                other: {
+                    color: { background: 'green' }
+                }
+            },
+            interaction: {
+                navigationButtons: true,
+                zoomView: true
+            },
+            physics: {
+                "stabilization": true,
+                "barnesHut": {
+                    "gravitationalConstant": -17500,
+                    "centralGravity": 0.35,
+                    "springLength": 80,
+                    "springConstant": 0.05,
+                    "damping": 0.75,
+                    "avoidOverlap": 0.1
+                }
+            },
+            configure: {
+                enabled: true,
+                filter: "physics",
+                container: document.getElementById('config')
+            }
+        };
+
+        var data = {nodes:vis_nodes, edges: vis_edges}
+        var network = new vis.Network(container, data, options);
+    </script>
+</body>
+</html>
