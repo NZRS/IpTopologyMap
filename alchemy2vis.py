@@ -8,6 +8,7 @@ parser = argparse.ArgumentParser("Converts GraphJSON to VisJS graph representati
 parser.add_argument('--datadir', required=True, help="directory to read input and save output")
 args = parser.parse_args()
 
+# Read the IP topology map up to the IP link
 with open("{}/ip.json".format(args.datadir)) as ip_file:
     graph_json_dump = json.load(ip_file)
 

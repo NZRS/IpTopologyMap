@@ -3,8 +3,18 @@
 import urllib2
 import json
 import sys
+import argparse
+import os
 from collections import Counter
 import pandas as pd
+
+
+parser = argparse.ArgumentParser("Fetches ATLAS probes information for a "
+                                 "given country")
+parser.add_argument('--datadir', required=True, help="directory to save output")
+parser.add_argument('--country', required=False, default='NZ',
+                    help="ISO3306 country code to fetch data for")
+args = parser.parse_args()
 
 base_url = "https://atlas.ripe.net/"
 url = base_url + "/api/v1/probe/?country_code=NZ&format=json&limit=50"
@@ -25,7 +35,8 @@ try:
         for obj in result['objects']:
             msm_cnt += 1
             if obj['status'] == 1 and None != obj.get('address_v4', None):
-                print "{0:d} {1:<20s} {2}".format(obj['id'], obj['address_v4'], obj['asn_v4'])
+                print("{0:d} {1:<20s} {2}".format(obj['id'],
+                                                  obj['address_v4'], obj['asn_v4']))
                 probe_list.append(dict((k, obj[k]) for k in ('id', 'address_v4', 'asn_v4')))
                 probe_asn[obj['asn_v4']] += 1
         if next_url is not None:
@@ -37,17 +48,18 @@ except urllib2.HTTPError as e:
     raise
 conn.close()
 
-print len(probe_list)
-with open('data/probes.json', 'wb') as probe_file:
+print(len(probe_list))
+with open(os.path.join(args.datadir, 'probes.json'), 'wb') as probe_file:
     json.dump(probe_list, probe_file)
 
 probes_per_origin = pd.DataFrame()
-with open('data/as-list.txt', 'wb') as asn_file:
+with open(os.path.join(args.datadir, 'as-list.txt'), 'wb') as asn_file:
     for asn, count in probe_asn.iteritems():
         asn_file.write("%s\n" % asn)
         probes_per_origin.append(dict(origin=asn, count=count), ignore_index=True)
 
-origin_weight = pd.read_csv('data/relevant-origin.csv', sep="\t", header=None, names=('origin', 'weight'))
+# origin_weight = pd.read_csv('data/relevant-origin.csv', sep="\t",
+# header=None, names=('origin', 'weight'))
 
-print probes_per_origin
-print origin_weight
+print(probes_per_origin)
+# print origin_weight

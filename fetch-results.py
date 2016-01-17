@@ -20,12 +20,13 @@ parser.add_argument('--msm', required=False, type=int, help="Fetch specific meas
 args = parser.parse_args()
 
 if not os.path.exists(args.datadir):
-    print "datadir must exists!"
+    print("Data directory %s must exists!" % args.datadir)
     sys.exit(1)
 
-authkey = read_auth("read-key.txt")
+atlas_read_api_key = 'read-key.txt'
+authkey = read_auth(atlas_read_api_key)
 if authkey is None:
-    print "Auth file not found, aborting"
+    print("Auth file %s not found, aborting" % atlas_read_api_key)
     sys.exit(1)
 
 if not args.msm:
@@ -36,7 +37,7 @@ else:
 
 result_list = []
 for msm in msm_list:
-    print "Fetching results for measurement %s" % msm
+    print("Fetching results for measurement %s" % msm)
     api_url = "https://atlas.ripe.net/api/v1/measurement/{}/result/?key={}".format(msm, authkey)
     request = urllib2.Request(api_url)
     request.add_header("Accept", "application/json")

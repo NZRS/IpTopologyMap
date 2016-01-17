@@ -5,3 +5,4 @@ GeoIP
 dnspython
 progressbar
 pandas
+py-radix

@@ -13,6 +13,7 @@ import GeoIP
 import itertools
 from networkx.readwrite import json_graph
 import random
+import os
 
 
 probe_addr = dict()
@@ -25,6 +26,7 @@ with open('data/known-networks.json', 'rb') as net_file:
     for prefix in known_net:
         # Replace the member with the object that represents an IPv4Network
         prefix['net'] = ipaddr.IPv4Network(prefix['net'])
+
 
 def name_hop(node, probe_id, seq):
     if node == "unknown_hop":
@@ -52,7 +54,12 @@ def org_from_addr(a):
         # Last attempt to look into the list of networks we know
         for prefix in known_net:
             if ipaddr.IPv4Address(a) in prefix['net']:
-                return prefix['group']
+                try:
+                    return prefix['group']
+                except KeyError:
+                    print("ERROR: Matching prefix %s for address %s is "
+                          "inconsistent" % (prefix, a))
+                    return "UNK"
 
         # Last resort
         return "UNK"
@@ -64,8 +71,12 @@ def class_from_name(node):
     elif re.search('^Private', node):
         return [2, "Priv"]
     elif re.search('^Probe', node):
-        org = org_from_addr(probe_addr[node])
-        return [1, org]
+        # Try to use the probe info first
+        if node in probe_info:
+            return [1, probe_info[node]['asn_v4']]
+        else:
+            org = org_from_addr(probe_addr[node])
+            return [1, org]
     else:
         try:
             if ipaddr.IPv4Address(node).version == 4:
@@ -94,14 +105,23 @@ args = parser.parse_args()
 addr_list = set()
 res_file = "{}/results.json".format(args.datadir)
 ip_path_list = []
+probe_info = {}
 
 with open(res_file, 'rb') as res_fd:
     res_blob = json.load(res_fd)
 
     if args.sample:
         sample_sz = int((args.sample/100)*len(res_blob))
-        print "INFO: Picking sample {} of {}".format(sample_sz, len(res_blob))
+        print("INFO: Picking sample {} of {}".format(sample_sz, len(res_blob)))
         res_blob = random.sample(res_blob, sample_sz)
+
+# Preload information about the probes used
+with open(os.path.join(args.datadir, 'probes.json'), 'rb') as probe_file:
+    probe_data = json.load(probe_file)
+
+    # Iterate over the list and generate a dict hashed by the id
+    for info in probe_data:
+        probe_info['Probe %s' % info['id']] = {k: v for k, v in info.items() if k != 'id'}
 
 G = nx.Graph()
 bgp = nx.Graph()
@@ -115,13 +135,13 @@ address_to_lookup = set()
 for res in res_blob:
     sagan_res = TracerouteResult(res)
 
-    print "Source = {}".format(sagan_res.source_address)
-    print "Origin = {}".format(sagan_res.origin)
+    print("Source = {}".format(sagan_res.source_address))
+    print("Origin = {}".format(sagan_res.origin))
     address_to_lookup.add(sagan_res.origin)
     addr_list.add(sagan_res.source_address)
-    print "Destination = {}".format(sagan_res.destination_address)
-    print "Hops = {}".format(sagan_res.total_hops)
-    print "Destination responded = {}".format(sagan_res.destination_ip_responded)
+    print("Destination = {}".format(sagan_res.destination_address))
+    print("Hops = {}".format(sagan_res.total_hops))
+    print("Destination responded = {}".format(sagan_res.destination_ip_responded))
     last_hop_detected = False
     clean_ip_path = []
     for hop in reversed(sagan_res.hops):
@@ -153,7 +173,7 @@ for res in res_blob:
         if len(addr_in_hop) == 0:
             addr_in_hop_list = {'index': hop.index, 'hop_info': [{'addr': "unknown_hop", 'rtt': 0.0}]}
         else:
-            addr_in_hop_list = {'index': hop.index, 'hop_info': [{'addr': k, 'rtt': v} for k, v in rtt_avg.iteritems()]}
+            addr_in_hop_list = {'index': hop.index, 'hop_info': [{'addr': k, 'rtt': v} for k, v in rtt_avg.items()]}
         clean_ip_path.insert(0, addr_in_hop_list)
 
     clean_ip_path.insert(0, {'index': 0, 'hop_info': [{'addr': "Probe %s" % sagan_res.probe_id, 'rtt': 0.0}]})
@@ -202,14 +222,14 @@ for res in res_blob:
         for hop in node_path[i]:
             clean_path.append([hop['name'], hop['group']])
             if invalid_group(hop['group']):
-                print "Pass3: Replace %s by %s" % (hop['group'], last_good_group)
+                print("Pass3: Replace %s by %s" % (hop['group'], last_good_group))
                 hop['group'] = last_good_group
             else:
                 last_good_group = hop['group']
 
     temp_path = []
-    for n1, n2 in itertools.izip(node_path, clean_path):
-        print "{name:>20}  {group:>8}".format(**n1[0]), " | ", "{0[0]:>20}  {0[1]:>8}".format(n2)
+    for n1, n2 in zip(node_path, clean_path):
+        print("{name:>20}  {group:>8}".format(**n1[0]), " | ", "{0[0]:>20}  {0[1]:>8}".format(n2))
         temp_path.append({'addr': n1[0]['name'], 'asn': n1[0]['group'], 'rtt': n1[0]['rtt']})
 
     ip_path_list.append({'responded': sagan_res.destination_ip_responded, 'path': temp_path})
@@ -221,6 +241,11 @@ for res in res_blob:
                 G.add_edge(s['name'], d['name'])
                 if s['group'] != d['group']:
                     bgp.add_edge(s['group'], d['group'])
+                if s['group'] is None:
+                    print("** Node %s has NULL group" % s)
+                if d['group'] is None:
+                    print("** Node %s has NULL group" % d)
+
                 G.node[s['name']]['group'] = s['group']
                 G.node[d['name']]['group'] = d['group']
                 G.node[s['name']]['_class'] = s['_class']
@@ -248,7 +273,7 @@ with open("{}/graph.json".format(args.datadir), 'wb') as graph_file:
         idx += 1
     json.dump(dict(links=[dict(source=node_idx[s], target=node_idx[t], weight=1) for s, t in G.edges_iter()],
                    nodes=node_list,
-                   groups=[dict(leaves=m, name=grp, padding=10) for grp, m in groups.iteritems()]), graph_file)
+                   groups=[dict(leaves=m, name=grp, padding=10) for grp, m in groups.items()]), graph_file)
 
 with open("{}/ip-network-graph.js".format(args.datadir), "wb") as graph_file:
     graph_file.write("var nodes = {};\n".format(json.dumps(node_list)))
@@ -265,6 +290,8 @@ nx.write_graphml(bgp, "{}/bgp.graphml".format(args.datadir))
 # Save a version in graphJSON for Alchemy
 with open("{}/bgp.json".format(args.datadir), 'wb') as bgp_json_file:
     json.dump(json_graph.node_link_data(bgp), bgp_json_file)
+
+
 
 with open("{}/as-list.txt".format(args.datadir), 'wb') as as_list_file:
     as_list_file.writelines(["{0}\n".format(n) for n in bgp.nodes_iter()])

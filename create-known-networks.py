@@ -10,7 +10,11 @@ import json
 
 networks = [dict(net='202.7.0.0/23', group='9439'),  # WIX
             dict(net='192.203.154.0/24', group='9560'),  # APE
+            dict(net='122.56.95.0/24', group='4648'),
+            dict(net='122.56.99.0/24', group='4648'),
+            dict(net='122.56.101.0/24', group='4648'),
             dict(net='122.56.110.0/24', group='4648'),
+            dict(net='122.56.111.0/24', group='4648'),
             dict(net='122.56.116.0/24', group='4648'),
             dict(net='122.56.118.0/24', group='4648'),
             dict(net='122.56.222.0/24', group='4648'),
@@ -46,6 +50,9 @@ networks = [dict(net='202.7.0.0/23', group='9439'),  # WIX
             dict(net='202.167.228.0/24', group='180010', country='AU'), # Equinix Sydney
             dict(net='206.223.123.0/24', group='180011', country='US'), # Equinix LA
             dict(net='206.223.119.0/24', group='180012', country='US'), # Equinix Chicago
+            dict(net='206.41.106.0/24', group='180013'), # AMS-IX Bay
+            dict(net='206.51.41.0/24', group='180014'), # CoreSite Any2 NoCal
+            dict(net='52.95.36.0/24', group='180015'), # AWS
             dict(net='218.100.21.0/24', group='9281'),
             dict(net='218.100.24.0/24', group='24388'),
             dict(net='202.174.183.0/24', group='24183'), # DTS New Zealand

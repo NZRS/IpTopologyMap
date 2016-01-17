@@ -1,5 +1,6 @@
 REL_DAY=20150201
 DATADIR ?= data
+SCANDIR=${DATADIR}/scans
 PROD_DIR=/usr/share/nginx/ip-map/
 
 all: ${DATADIR}/bgp.alchemy.json
@@ -11,19 +12,35 @@ data/$(REL_DAY).as-rel.txt:
 	mv $@_ $@
 
 data/known-networks.json: create-known-networks.py
-	python create-known-networks.py
+	python2 create-known-networks.py
 
-${DATADIR}/measurements.json: data/probes.json data/nz-dest-addr.json data/known-sites.txt
-	! test -d ${DATADIR} && mkdir -p ${DATADIR} && python probe-to-probe-traceroute.py --datadir ${DATADIR}
+data/GeoIPASNum.dat:
+	wget -O - http://download.maxmind.com/download/geoip/database/asnum/GeoIPASNum.dat.gz | gzip -cd > $@
+
+${DATADIR}/probes.json: atlas-nz-probes.py
+	! test -d ${DATADIR} || mkdir -p ${DATADIR}
+	./atlas-nz-probes.py --datadir ${DATADIR}
+
+${SCANDIR}/downloaded.txt: download-scan-data.py
+	mkdir -p ${SCANDIR}
+	./download-scan-data.py --datadir ${SCANDIR}
+	touch $@
+
+${DATADIR}/dest-addr.json: find-targets-from-scans.py ${SCANDIR}/downloaded.txt
+	python2 find-targets-from-scans.py --scandir ${SCANDIR} --datadir ${DATADIR}
+
+${DATADIR}/measurements.json: ${DATADIR}/probes.json ${DATADIR}/dest-addr.json data/known-sites.txt
+	./probe-to-probe-traceroute.py --datadir ${DATADIR}
 
 ${DATADIR}/results.json: ${DATADIR}/measurements.json
-	python fetch-results.py --datadir ${DATADIR}
+	python2 fetch-results.py --datadir ${DATADIR}
 
-${DATADIR}/bgp.json ${DATADIR}/ip.json ${DATADIR}/ip-path.json: ${DATADIR}/results.json data/known-networks.json analyze-results.py
-	python analyze-results.py --datadir ${DATADIR} --sample 50
+${DATADIR}/bgp.json ${DATADIR}/ip.json ${DATADIR}/ip-path.json: ${DATADIR}/results.json\
+        data/known-networks.json analyze-results.py data/GeoIPASNum.dat
+	python2 analyze-results.py --datadir ${DATADIR} --sample 100
 
-${DATADIR}/bgp.alchemy.json: prepare-for-alchemy.py ${DATADIR}/bgp.json
-	python prepare-for-alchemy.py --datadir ${DATADIR} --relfile data/$(REL_DAY).as-rel.txt
+${DATADIR}/bgp.alchemy.json ${DATADIR}/vis-bgp-graph.js: prepare-for-alchemy.py ${DATADIR}/bgp.json
+	python2 prepare-for-alchemy.py --datadir ${DATADIR} --relfile data/$(REL_DAY).as-rel.txt
 
 ${DATADIR}/ip-network-graph.js: ${DATADIR}/ip.json alchemy2vis.py
 	python alchemy2vis.py --datadir ${DATADIR}
@@ -42,6 +59,13 @@ deploy-test: ${DATADIR}/ip-network-graph.js html/ip-test.html
 	rsync -a bower_components/vis/dist/vis.css /var/www/visjs/styles/
 	rsync -a ${DATADIR}/ip-network-graph.js /var/www/visjs/misc/data
 	rsync -a html/ip-test.html /var/www/visjs
+
+deploy-vis-bgp: ${DATADIR}/vis-bgp-graph.js html/vis-bgp-test.html
+	mkdir -p /var/www/visjs/misc/data
+	rsync -a bower_components/vis/dist/vis.map bower_components/vis/dist/vis.min.js bower_components/vis/dist/vis.js /var/www/visjs/scripts/
+	rsync -a bower_components/vis/dist/vis.css /var/www/visjs/styles/
+	rsync -a ${DATADIR}/vis-bgp-graph.js /var/www/visjs/misc/data
+	rsync -a html/vis-bgp-test.html /var/www/visjs
 
 deploy-prod-poc: ${DATADIR}/ip-network-graph.js html/ip-test.html
 	ssh bgp-map-ext "mkdir -p ${PROD_DIR}/misc/data ${PROD_DIR}/scripts ${PROD_DIR}/styles"

@@ -25,5 +25,8 @@
   ],
   "dependencies": {
     "vis": "~4.4.0"
+  },
+  "resolutions": {
+    "vis": "~4.12.0"
   }
 }

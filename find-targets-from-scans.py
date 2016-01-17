@@ -1,3 +1,5 @@
+#!/usr/bin/python
+
 __author__ = 'secastro'
 
 import gzip
@@ -5,8 +7,18 @@ import csv
 import json
 from progressbar import ProgressBar
 from radix import Radix
+import argparse
+import glob
+import os
 
 nz_prefix = set()
+
+parser = argparse.ArgumentParser("Using data sets from scans.io, "
+                                 "find suitable targets for probing")
+parser.add_argument('--datadir', required=True, help="directory to save output")
+parser.add_argument('--scandir', required=True,
+                    help="directory with scans.io datasets")
+args = parser.parse_args()
 
 
 def is_ip_contained(a):
@@ -52,18 +64,18 @@ for p1 in nz_prefix:
     [prefix, masklen] = p1.split("/")
     rt.add(network=prefix, masklen=int(masklen))
 
-address_list = extract_unique_address_from_scans(['data/scans/20150309-dns-53.csv.gz',
-                                                  'data/scans/20150309-sip-5060.csv.gz'], sample=False)
+address_list = extract_unique_address_from_scans(glob.glob(os.path.join(
+    args.scandir, '*.csv.gz')), sample=False)
 
 print "%d addresses will be checked" % (len(address_list))
-print "%d NZ prefixes" % (len(nz_prefix))
-nz_addr = []
+print "%d prefixes" % (len(nz_prefix))
+selected_addr = []
 pbar = ProgressBar(maxval=len(address_list)).start()
 cnt = 0
 for addr in address_list:
     prefix = is_ip_contained(addr)
     if prefix is not None:
-        nz_addr.append(dict(prefix=prefix.prefix, address=addr))
+        selected_addr.append(dict(prefix=prefix.prefix, address=addr))
     cnt += 1
     if cnt % 100 == 0:
         pbar.update(cnt)
@@ -71,6 +83,6 @@ for addr in address_list:
 pbar.finish()
 
 
-print "%d NZ addresses found" % len(nz_addr)
-with open('data/nz-dest-addr.json', 'wb') as nz_addr_file:
-    json.dump([a for a in nz_addr], nz_addr_file)
+print "%d addresses found" % len(selected_addr)
+with open(os.path.join(args.datadir, 'dest-addr.json'), 'wb') as addr_file:
+    json.dump([a for a in selected_addr], addr_file)

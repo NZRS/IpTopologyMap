@@ -1,3 +1,5 @@
+#!/usr/bin/python
+
 __author__ = 'secastro'
 
 import json
@@ -11,6 +13,13 @@ import os.path
 from collections import defaultdict
 
 
+def valid_fraction(s):
+    if 0.0 <= float(s) <= 1.0:
+        return float(s)
+    else:
+        raise argparse.ArgumentTypeError("%r is out of bounds [0.0, 1.0]" % s)
+
+
 def load_existing(source_dir, filename):
     e = []
     file_loc = "{}/{}".format(source_dir, filename)
@@ -21,22 +30,23 @@ def load_existing(source_dir, filename):
     return e
 
 
-def get_address_from_sample(infile):
-    with open(infile, 'rb') as nz_addr_file:
-        nz_dest = json.load(nz_addr_file)
+def get_address_sample(infile, fraction):
+    with open(infile, 'rb') as addr_file:
+        dest_list = json.load(addr_file)
 
     """Group the addresses by the prefix covering it"""
     dest_addr = defaultdict(list)
-    for dest in nz_dest:
+    for dest in dest_list:
         dest_addr[dest['prefix']].append(dest['address'])
 
-    sample = []
+    selected = []
     """Pick one address per prefix"""
     for prefix, addresses in dest_addr.iteritems():
         for a in random.sample(addresses, 1):
-            sample.append(a)
+            selected.append(a)
 
-    return sample
+    # Generate a sample from the list of selected addresses
+    return random.sample(selected, int(len(selected)*fraction))
 
 
 def read_auth(filename):
@@ -91,7 +101,11 @@ def schedule_measurement(dest, probes):
 
 parser = argparse.ArgumentParser("Creates probe to probe traceroutes")
 parser.add_argument('--datadir', required=True, help="directory to save output")
-parser.add_argument('--stage', required=False, help="Stage of measurement to execute (1,2,3,all)")
+parser.add_argument('--stage', required=False,
+                    help="Stage of measurement to execute (1, 2, 3, all)")
+parser.add_argument('--sample', required=False, default=0.2,
+                    type=valid_fraction,
+                    help="Fraction of addresses to sample")
 args = parser.parse_args()
 if (args.stage is None) or (args.stage == 'all'):
     stage = [1, 2, 3]
@@ -104,10 +118,10 @@ if not os.path.exists(args.datadir):
 
 authkey = read_auth("create-key.txt")
 if authkey is None:
-    print "Auth file not found, aborting"
+    print "Auth file with ATLAS API key not found, aborting"
     sys.exit(1)
 
-with open('data/probes.json', 'rb') as probe_file:
+with open(os.path.join(args.datadir, 'probes.json'), 'rb') as probe_file:
     probe_list = json.load(probe_file)
 
 base_url = "https://atlas.ripe.net/api/v1/measurement/?key={}".format(authkey)
@@ -126,7 +140,7 @@ if 1 in stage:
 """Second stage: Schedule the measurement to a selected address from a sample"""
 if 2 in stage:
     print "Executing Stage 2"
-    for addr in random.sample(get_address_from_sample('data/nz-dest-addr.json'), 60):
+    for addr in get_address_sample(os.path.join(args.datadir, 'dest-addr.json'), args.sample):
         status = schedule_measurement(addr, [str(id) for id in probe_id_set])
         msm_list = msm_list + status['list']
         failed_msm = failed_msm + status['failed']
@@ -141,9 +155,9 @@ if 3 in stage:
             failed_msm = failed_msm + status['failed']
 
 existing_msm = load_existing(args.datadir, 'measurements.json')
-with open('{}/measurements.json'.format(args.datadir), 'wb') as msm_file:
+with open(os.path.join(args.datadir, 'measurements.json'), 'wb') as msm_file:
     json.dump(msm_list + existing_msm, msm_file)
 
 existing_failures = load_existing(args.datadir, 'failed-probes.json')
-with open('{}/failed-probes.json'.format(args.datadir), 'wb') as failed_file:
+with open(os.path.join(args.datadir, 'failed-probes.json'), 'wb') as failed_file:
     json.dump(failed_msm + existing_failures, failed_file)
