@@ -51,8 +51,16 @@
                 }
             },
             edges: {
-                smooth: false,
-                width: 2
+                smooth: {
+                    enabled: true,
+                    type: 'continous',
+                    roundness: 0.25
+                },
+                width: 2,
+                color: {
+                    color: 'white',
+                    opacity: 0.6
+                }
             },
             groups: {
                 AU: {
