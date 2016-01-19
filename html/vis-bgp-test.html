@@ -26,92 +26,183 @@
     <script src="/misc/data/vis-bgp-graph.js"></script>
 
     <script type="text/javascript">
+        var network;
+        var highlightActive = false;
+        // Data comes fron the vis-bgp-graph.js file
         var vis_nodes = new vis.DataSet(nodes);
         var vis_edges = new vis.DataSet(edges);
 
-        var container = document.getElementById('ipvis');
-        var options = {
-            autoResize: true,
-            width: '100%',
-            height: '100%',
-            interaction: {
+        function redrawAll() {
+            var container = document.getElementById('ipvis');
+            var options = {
+                autoResize: true,
+                width: '100%',
+                height: '100%',
+                interaction: {
 
-            },
-            layout: {
-                randomSeed: 8
-            },
-            nodes: {
-                shape: 'dot',
-                size: 20,
-                physics: true,
-                borderWidth: 1,
-                font: {
-                    color: 'white',
-                    size: 10
-                }
-            },
-            edges: {
-                smooth: {
+                },
+                layout: {
+                    randomSeed: 8
+                },
+                nodes: {
+                    shape: 'dot',
+                    size: 20,
+                    physics: true,
+                    borderWidth: 1,
+                    font: {
+                        color: 'white',
+                        size: 10
+                    }
+                },
+                edges: {
+                    smooth: {
+                        enabled: true,
+                        type: 'continuous',
+                        roundness: 0.25
+                    },
+                    width: 2,
+                    color: {
+                        color: 'rgba(255,255,255,0.3)'
+                    }
+                },
+                groups: {
+                    AU: {
+                        color: {
+                            background: 'rgba(255,255,0,0.8)',
+                            border: 'white',
+                            highlight: {
+                                background: 'rgba(255,255,0,1.0)',
+                                border: 'white'
+                            }
+                        }
+                    },
+                    NZ: {
+                        color: {
+                            background: 'rgba(132,132,132,0.8)',
+                            border: 'lightgrey',
+                            highlight: {
+                                background: 'rgba(132,132,132,1.0)',
+                                border: 'lightgrey'
+                            }
+                        }
+                    },
+                    IX: {
+                        color: {
+                            background: 'rgba(255,0,64,0.8)',
+                            border: 'pink',
+                            highlight: {
+                                background: 'rgba(255,0,64,1.0)',
+                                border: 'pink'
+                            }
+                        }
+                    },
+                    other: {
+                        color: {
+                            background: 'rgba(8,138,8,0.8)',
+                            border: 'limegreen',
+                            highlight: {
+                                background: 'rgba(8,138,8,1.0)',
+                                border: 'limegreen'
+                            }
+                        }
+                    }
+                },
+                interaction: {
+                    navigationButtons: true,
+                    zoomView: true
+                },
+                physics: {
+                    "stabilization": true,
+                    "barnesHut": {
+                        "gravitationalConstant": -17500,
+                        "centralGravity": 0.35,
+                        "springLength": 120,
+                        "springConstant": 0.05,
+                        "damping": 0.75,
+                        "avoidOverlap": 0.75
+                    }
+                },
+                configure: {
                     enabled: true,
-                    type: 'continous',
-                    roundness: 0.25
-                },
-                width: 2,
-                color: {
-                    color: 'white',
-                    opacity: 0.6
+                    filter: "physics",
+                    container: document.getElementById('config')
                 }
-            },
-            groups: {
-                AU: {
-                    color: {
-                        background: 'yellow',
-                        border: 'white'
-                    }
-                },
-                NZ: {
-                    color: {
-                        background: 'grey',
-                        border: 'lightgrey'
-                    }
-                },
-                IX: {
-                    color: {
-                        background: 'red',
-                        border: 'pink'
-                    }
-                },
-                other: {
-                    color: {
-                        background: 'darkgreen',
-                        border: 'limegreen'
-                    }
-                }
-            },
-            interaction: {
-                navigationButtons: true,
-                zoomView: true
-            },
-            physics: {
-                "stabilization": true,
-                "barnesHut": {
-                    "gravitationalConstant": -17500,
-                    "centralGravity": 0.35,
-                    "springLength": 80,
-                    "springConstant": 0.05,
-                    "damping": 0.75,
-                    "avoidOverlap": 0.75
-                }
-            },
-            configure: {
-                enabled: true,
-                filter: "physics",
-                container: document.getElementById('config')
-            }
-        };
+            };
 
-        var data = {nodes:vis_nodes, edges: vis_edges}
-        var network = new vis.Network(container, data, options);
+            var data = {nodes:vis_nodes, edges: vis_edges}
+            network = new vis.Network(container, data, options);
+            allNodes = vis_nodes.get({returnType: 'Object'});
+            // Do this to save the location of nodes in the network once the
+            // physics simulation finishes
+            network.on('stabilized', function() { network.storePositions(); });
+            network.on('click', neighbourHighlight);
+        }
+
+        function neighbourHighlight(params) {
+            if (params.nodes.length > 0) {
+              highlightActive = true;
+              var i,j;
+              var selectedNode = params.nodes[0];
+              var degrees = 1;
+
+              // mark all nodes as hard to read.
+              for (var nodeId in allNodes) {
+                allNodes[nodeId].color = 'rgba(100,100,100,0.5)';
+                if (allNodes[nodeId].hiddenLabel === undefined) {
+                  allNodes[nodeId].hiddenLabel = allNodes[nodeId].label;
+                  allNodes[nodeId].label = undefined;
+                }
+              }
+
+              var connectedNodes = network.getConnectedNodes(selectedNode);
+              var allConnectedNodes = [];
+
+              // get all connected nodes to a degree
+              for (i = 1; i < degrees; i++) {
+                for (j = 0; j < connectedNodes.length; j++) {
+                  allConnectedNodes = allConnectedNodes.concat(network.getConnectedNodes(connectedNodes[j]));
+                }
+              }
+
+              // all first degree nodes get their own color and their label back
+              for (i = 0; i < connectedNodes.length; i++) {
+                allNodes[connectedNodes[i]].color = undefined;
+                if (allNodes[connectedNodes[i]].hiddenLabel !== undefined) {
+                  allNodes[connectedNodes[i]].label = allNodes[connectedNodes[i]].hiddenLabel;
+                  allNodes[connectedNodes[i]].hiddenLabel = undefined;
+                }
+              }
+
+              // the main node gets its own color and its label back.
+              allNodes[selectedNode].color = undefined;
+              if (allNodes[selectedNode].hiddenLabel !== undefined) {
+                allNodes[selectedNode].label = allNodes[selectedNode].hiddenLabel;
+                allNodes[selectedNode].hiddenLabel = undefined;
+              }
+            }
+            else if (highlightActive === true) {
+              // reset all nodes
+              for (var nodeId in allNodes) {
+                allNodes[nodeId].color = undefined;
+                if (allNodes[nodeId].hiddenLabel !== undefined) {
+                  allNodes[nodeId].label = allNodes[nodeId].hiddenLabel;
+                  allNodes[nodeId].hiddenLabel = undefined;
+                }
+              }
+              highlightActive = false
+            }
+
+            // transform the object into an array
+            var updateArray = [];
+            for (nodeId in allNodes) {
+              if (allNodes.hasOwnProperty(nodeId)) {
+                updateArray.push(allNodes[nodeId]);
+              }
+            }
+            vis_nodes.update(updateArray);
+        }
+
+        redrawAll()
     </script>
 </body>
 </html>
