@@ -90,6 +90,16 @@ def invalid_group(g):
     return g in ['UNK', 'X0', 'Priv']
 
 
+def ip_link(src, tgt):
+    """
+    :param src: String representation of an IP address
+    :param tgt: String representation of an IP address
+    :return: String representation of an IP link, where source and target
+    addresses are ordered
+    """
+    return " - ".join(sorted([src, tgt]))
+
+
 def valid_percent(s):
     v = float(s)
     if v < 0.01 or v > 100:
@@ -240,7 +250,18 @@ for res in res_blob:
             for d in node_path[i]:
                 G.add_edge(s['name'], d['name'])
                 if s['group'] != d['group']:
-                    bgp.add_edge(s['group'], d['group'])
+                    # This link is across different ASes, add it to the BGP
+                    # representation
+                    if bgp.has_edge(s['group'], d['group']):
+                        pairs = bgp[s['group']][d['group']]['pairs']
+                        pairs.add(ip_link(s['name'], d['name']))
+                    else:
+                        pairs = set([ip_link(s['name'], d['name'])])
+
+                    # Attribute pairs holds a set of IP links that constitute
+                    #  this AS relationship. Intended to be used to track
+                    # where organizations peer
+                    bgp.add_edge(s['group'], d['group'], pairs=pairs)
                 if s['group'] is None:
                     print("** Node %s has NULL group" % s)
                 if d['group'] is None:
@@ -285,9 +306,14 @@ with open("{}/ip.json".format(args.datadir), 'wb') as ip_json_file:
     json.dump(json_graph.node_link_data(G), ip_json_file)
 
 # Save a version in GraphML for gephi
-nx.write_graphml(bgp, "{}/bgp.graphml".format(args.datadir))
+# nx.write_graphml(bgp, "{}/bgp.graphml".format(args.datadir))
 
 # Save a version in graphJSON for Alchemy
+# This graph has an attribute 'pairs' that's a set, needs to be transformed
+# before dumping it
+for s, t, d in bgp.edges_iter(data=True):
+    bgp[s][t]['pairs'] = [p for p in d['pairs']]
+
 with open("{}/bgp.json".format(args.datadir), 'wb') as bgp_json_file:
     json.dump(json_graph.node_link_data(bgp), bgp_json_file)
 

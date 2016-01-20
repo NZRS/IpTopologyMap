@@ -100,7 +100,8 @@ with open(os.path.join(args.datadir, 'vis-bgp-graph.js'), 'wb') as vis_file:
         if edge['target'] != edge['source']:
             bgp_edges.append({'to': node_idx[edge['target']],
                               'from': node_idx[edge['source']],
-                              'width': 1})
+                              'width': 1,
+                              'pairs': edge['pairs']})
 
     vis_file.write("var nodes = {};\n".format(
         json.dumps([{'id': node_idx[n],

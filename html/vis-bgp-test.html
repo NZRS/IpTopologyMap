@@ -21,6 +21,7 @@
 <body>
     <div id="ipvis"></div>
     <div id="config"></div>
+    <div id="console">Console:</div>
 
     <script src="/scripts/vis.min.js"></script>
     <script src="/misc/data/vis-bgp-graph.js"></script>
@@ -28,6 +29,7 @@
     <script type="text/javascript">
         var network;
         var highlightActive = false;
+        var hl_edge = false;
         // Data comes fron the vis-bgp-graph.js file
         var vis_nodes = new vis.DataSet(nodes);
         var vis_edges = new vis.DataSet(edges);
@@ -116,7 +118,7 @@
                     "barnesHut": {
                         "gravitationalConstant": -17500,
                         "centralGravity": 0.35,
-                        "springLength": 120,
+                        "springLength": 220,
                         "springConstant": 0.05,
                         "damping": 0.75,
                         "avoidOverlap": 0.75
@@ -132,6 +134,7 @@
             var data = {nodes:vis_nodes, edges: vis_edges}
             network = new vis.Network(container, data, options);
             allNodes = vis_nodes.get({returnType: 'Object'});
+            allEdges = vis_edges.get({returnType: 'Object'});
             // Do this to save the location of nodes in the network once the
             // physics simulation finishes
             network.on('stabilized', function() { network.storePositions(); });
@@ -139,7 +142,15 @@
         }
 
         function neighbourHighlight(params) {
-            if (params.nodes.length > 0) {
+            // Click on an edge
+            if (params.nodes.length == 0 && params.edges.length > 0) {
+                var selectedEdge = params.edges[0]
+                hl_edge = true;
+                document.getElementById('console').innerHTML = "<b>IP addresses for this edge:<b/><br/>" +
+                    allEdges[selectedEdge]['pairs'].join("<br/>");
+            }
+            // Click on a node
+            else if (params.nodes.length > 0) {
               highlightActive = true;
               var i,j;
               var selectedNode = params.nodes[0];
@@ -190,6 +201,9 @@
                 }
               }
               highlightActive = false
+            }
+            else if (hl_edge === true) {
+                document.getElementById('console').innerHTML = '';
             }
 
             // transform the object into an array
