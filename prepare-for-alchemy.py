@@ -109,3 +109,4 @@ with open(os.path.join(args.datadir, 'vis-bgp-graph.js'), 'wb') as vis_file:
                      'group': v['group'],
                      'value': v['degree']} for n, v in bgp_nodes.iteritems()])))
     vis_file.write("var edges = {};\n".format(json.dumps(bgp_edges)))
+    vis_file.write("var metadata = {};\n".format(json.dumps(bgp_map.graph['metadata'])))

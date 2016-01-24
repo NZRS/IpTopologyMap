@@ -14,6 +14,7 @@ import itertools
 from networkx.readwrite import json_graph
 import random
 import os
+import datetime
 
 
 probe_addr = dict()
@@ -134,7 +135,8 @@ with open(os.path.join(args.datadir, 'probes.json'), 'rb') as probe_file:
         probe_info['Probe %s' % info['id']] = {k: v for k, v in info.items() if k != 'id'}
 
 G = nx.Graph()
-bgp = nx.Graph()
+bgp = nx.Graph(metadata={'probes_num': len(probe_info),
+                         'tracert_num': len(res_blob)})
 nodes = set()
 edges = []
 
@@ -239,7 +241,9 @@ for res in res_blob:
 
     temp_path = []
     for n1, n2 in zip(node_path, clean_path):
-        print("{name:>20}  {group:>8}".format(**n1[0]), " | ", "{0[0]:>20}  {0[1]:>8}".format(n2))
+        # print("{name:>20}  {group:>8}".format(**n1[0]), " | ", "{0[0]:>20}  {0[1]:>8}".format(n2))
+        print("{0[0]:>20}  {0[1]:>8}".format(n2), " | ",
+              "{name:>20}  {group:>8}".format(**n1[0]))
         temp_path.append({'addr': n1[0]['name'], 'asn': n1[0]['group'], 'rtt': n1[0]['rtt']})
 
     ip_path_list.append({'responded': sagan_res.destination_ip_responded, 'path': temp_path})
@@ -314,9 +318,10 @@ with open("{}/ip.json".format(args.datadir), 'wb') as ip_json_file:
 for s, t, d in bgp.edges_iter(data=True):
     bgp[s][t]['pairs'] = [p for p in d['pairs']]
 
+# Add the date of generation to the metadata in the BGP view
+bgp.graph['metadata']['updated'] = str(datetime.date.today())
 with open("{}/bgp.json".format(args.datadir), 'wb') as bgp_json_file:
     json.dump(json_graph.node_link_data(bgp), bgp_json_file)
-
 
 
 with open("{}/as-list.txt".format(args.datadir), 'wb') as as_list_file:

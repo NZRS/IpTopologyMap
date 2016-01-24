@@ -2,6 +2,7 @@ REL_DAY=20150201
 DATADIR ?= data
 SCANDIR=${DATADIR}/scans
 PROD_DIR=/usr/share/nginx/ip-map/
+SELECTED_TOPOLOGY_DATA=data/country-aspath-selection.json
 
 all: ${DATADIR}/bgp.alchemy.json
 
@@ -26,8 +27,9 @@ ${SCANDIR}/downloaded.txt: download-scan-data.py
 	./download-scan-data.py --datadir ${SCANDIR}
 	touch $@
 
-${DATADIR}/dest-addr.json: find-targets-from-scans.py ${SCANDIR}/downloaded.txt
-	python2 find-targets-from-scans.py --scandir ${SCANDIR} --datadir ${DATADIR}
+
+${DATADIR}/dest-addr.json: find-targets-from-scans.py ${SCANDIR}/downloaded.txt ${SELECTED_TOPOLOGY_DATA}
+	python2 find-targets-from-scans.py --scandir ${SCANDIR} --datadir ${DATADIR} --topology-data ${SELECTED_TOPOLOGY_DATA}
 
 ${DATADIR}/measurements.json: ${DATADIR}/probes.json ${DATADIR}/dest-addr.json data/known-sites.txt
 	./probe-to-probe-traceroute.py --datadir ${DATADIR}

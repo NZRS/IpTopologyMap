@@ -2,26 +2,56 @@
 <html>
 <head lang="en">
     <meta charset="UTF-8">
-    <title>VisJS BGP Test</title>
+    <title>NZ IP Topology Map</title>
     <style type="text/css">
     #ipvis {
       height: 600px;
-      width: 1200px;
-      border: 1px solid lightgray;
+      width: 1000px;
       background: black;
+        margin-left: 250px;
     }
-    #config {
+    #legend {
       float: left;
-      width: 400px;
+      width: 250px;
       height: 600px;
+      background: black;
+      color: white;
+      font-size: 8;
+      font-family: 'Source Sans Pro', Helvetica, sans-serif;
     }
-
+    #console {
+        background: black;
+        color: white;
+        font-size: 8;
+        height: 100px;
+        width: 1250px;
+    }
+    #brand-title {
+        font-weight: 200;
+        font-size: 20px;
+        text-align: left;
+        font-family: 'Source Sans Pro', Helvetica, sans-serif;
+    }
     </style>
 </head>
 <body>
+    <div id="legend">
+        <span id="brand-title">NZ IP Topology Map</span>
+        <image height="80px" src="/images/NZRS_Logo_white.png"/>
+        <ul>
+            <li>Topology derived from hundreds of ICMP traceroutes, originated from the <a href="https://atlas.ripe.net">RIPE ATLAS</a> probes located in NZ
+                <ul>
+                    <li>To any other RIPE ATLAS probes in NZ
+                    <li>To randomly selected IP addresses in NZ</li>
+                    <li>To 50 random websites present in the Alexa Top 250 sites in NZ</li>
+                </ul>
+            <li>IP addresses mapped to ASN using MaxMind GeoIP database. AS Path derived from IP Path using custom code.</li>
+            <li>Country and names for each AS fetched from Team Cymru <a href="http://www.team-cymru.org/IP-ASN-mapping.html">database</a></li>
+        </ul>
+        <span id="metadata"></span>
+    </div>
     <div id="ipvis"></div>
-    <div id="config"></div>
-    <div id="console">Console:</div>
+    <div id="console">Information:<br/><span id="edge_info"/></div>
 
     <script src="/scripts/vis.min.js"></script>
     <script src="/misc/data/vis-bgp-graph.js"></script>
@@ -30,7 +60,7 @@
         var network;
         var highlightActive = false;
         var hl_edge = false;
-        // Data comes fron the vis-bgp-graph.js file
+        // Data comes from the vis-bgp-graph.js file
         var vis_nodes = new vis.DataSet(nodes);
         var vis_edges = new vis.DataSet(edges);
 
@@ -123,11 +153,6 @@
                         "damping": 0.75,
                         "avoidOverlap": 0.75
                     }
-                },
-                configure: {
-                    enabled: true,
-                    filter: "physics",
-                    container: document.getElementById('config')
                 }
             };
 
@@ -139,6 +164,12 @@
             // physics simulation finishes
             network.on('stabilized', function() { network.storePositions(); });
             network.on('click', neighbourHighlight);
+
+            // Display the metadata
+            document.getElementById('metadata').innerHTML = "Updated on: " +
+            metadata['updated'] + "<br/>" +
+            "Number of traceroutes: " + metadata['tracert_num'] + "<br/>" +
+            "Number of probes: " + metadata['probes_num'];
         }
 
         function neighbourHighlight(params) {
@@ -146,7 +177,7 @@
             if (params.nodes.length == 0 && params.edges.length > 0) {
                 var selectedEdge = params.edges[0]
                 hl_edge = true;
-                document.getElementById('console').innerHTML = "<b>IP addresses for this edge:<b/><br/>" +
+                document.getElementById('edge_info').innerHTML = "<b>IP addresses for this edge:<b/><br/>" +
                     allEdges[selectedEdge]['pairs'].join("<br/>");
             }
             // Click on a node
@@ -203,7 +234,7 @@
               highlightActive = false
             }
             else if (hl_edge === true) {
-                document.getElementById('console').innerHTML = '';
+                document.getElementById('edge_info').innerHTML = '';
             }
 
             // transform the object into an array
