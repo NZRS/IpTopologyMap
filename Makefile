@@ -2,6 +2,7 @@ REL_DAY=20150201
 DATADIR ?= data
 SCANDIR=${DATADIR}/scans
 PROD_DIR=/usr/share/nginx/ip-map/
+PROD_VIS_DIR=/usr/share/nginx/ip-map/vis/
 SELECTED_TOPOLOGY_DATA=data/country-aspath-selection.json
 
 all: ${DATADIR}/bgp.alchemy.json
@@ -68,6 +69,13 @@ deploy-vis-bgp: ${DATADIR}/vis-bgp-graph.js html/vis-bgp-test.html
 	rsync -a bower_components/vis/dist/vis.css /var/www/visjs/styles/
 	rsync -a ${DATADIR}/vis-bgp-graph.js /var/www/visjs/misc/data
 	rsync -a html/vis-bgp-test.html /var/www/visjs
+
+deploy-prod-vis-bgp: ${DATADIR}/vis-bgp-graph.js html/vis-bgp-test.html
+	ssh bgp-map-ext "mkdir -p ${PROD_VIS_DIR}/misc/data ${PROD_VIS_DIR}/scripts ${PROD_VIS_DIR}/styles"
+	rsync -a bower_components/vis/dist/vis.map bower_components/vis/dist/vis.min.js bower_components/vis/dist/vis.js bgp-map-ext:${PROD_VIS_DIR}/scripts
+	rsync -a bower_components/vis/dist/vis.css bgp-map-ext:${PROD_VIS_DIR}/styles/
+	rsync -a ${DATADIR}/vis-bgp-graph.js bgp-map-ext:${PROD_DIR}/misc/data/
+	rsync -a html/vis-bgp-test.html bgp-map-ext:${PROD_VIS_DIR}/index.html
 
 deploy-prod-poc: ${DATADIR}/ip-network-graph.js html/ip-test.html
 	ssh bgp-map-ext "mkdir -p ${PROD_DIR}/misc/data ${PROD_DIR}/scripts ${PROD_DIR}/styles"
