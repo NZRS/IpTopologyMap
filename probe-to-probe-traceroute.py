@@ -87,12 +87,18 @@ def schedule_measurement(dest, probes):
         results = json.load(conn)
         print results
         print req_data
-        for m in results['measurements']:
-            msm_status['list'].append(m)
+        # Check if we got a positive result
+        if 'measurements' in results:
+            for m in results['measurements']:
+                msm_status['list'].append(m)
+        # Check if we got an error, save the request for later
+        if 'error' in results:
+            msm_status['failed'].append(dest)
         conn.close()
         # This sleep is important to give time to the scheduled measurements to complete before trying more.
         time.sleep(3)
     except urllib2.HTTPError as e:
+        # Other kind of error
         msm_status['failed'].append(dest)
         print "Fatal Error: {}".format(e.read())
         print req_data
@@ -106,12 +112,18 @@ parser.add_argument('--stage', required=False,
 parser.add_argument('--sample', required=False, default=0.2,
                     type=valid_fraction,
                     help="Fraction of addresses to sample")
+parser.add_argument('--retry', required=False, action='store_true',
+                    help="Schedule measurements for previously failed attempts")
 args = parser.parse_args()
 if (args.stage is None) or (args.stage == 'all'):
     stage = [1, 2, 3]
 else:
     stage = [int(s) for s in args.stage.split(",")]
 
+if args.retry:
+    # We are cheating here, setting the list of stages to nothing
+    stage = []
+    print("INFO: We will retry previously failed measurements")
 
 if not os.path.exists(args.datadir):
     os.makedirs(args.datadir)
@@ -154,10 +166,23 @@ if 3 in stage:
             msm_list = msm_list + status['list']
             failed_msm = failed_msm + status['failed']
 
+if args.retry:
+    print("Executing retries")
+    with open(os.path.join(args.datadir, 'failed-msm.json')) as failed_file:
+        prev_failed = json.load(failed_file)
+
+        # Generate a set, to avoid duplicating destinations
+        for prev_attempt in set(prev_failed):
+            status = schedule_measurement(prev_attempt,
+                                          [str(id) for id in probe_id_set])
+            msm_list = msm_list + status['list']
+            failed_msm = failed_msm + status['failed']
+
+
 existing_msm = load_existing(args.datadir, 'measurements.json')
 with open(os.path.join(args.datadir, 'measurements.json'), 'wb') as msm_file:
     json.dump(msm_list + existing_msm, msm_file)
 
-existing_failures = load_existing(args.datadir, 'failed-probes.json')
-with open(os.path.join(args.datadir, 'failed-probes.json'), 'wb') as failed_file:
+existing_failures = load_existing(args.datadir, 'failed-msm.json')
+with open(os.path.join(args.datadir, 'failed-msm.json'), 'wb') as failed_file:
     json.dump(failed_msm + existing_failures, failed_file)
