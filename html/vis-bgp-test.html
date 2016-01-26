@@ -4,33 +4,44 @@
     <meta charset="UTF-8">
     <title>NZ IP Topology Map</title>
     <style type="text/css">
+    html, body {
+        width: 100%;
+        height: 100%;
+    }
     #ipvis {
-      height: 600px;
-      width: 1000px;
+      height: 85%;
+      width: 100%;
       background: black;
-        margin-left: 250px;
+        margin-left: 20%;
     }
     #legend {
       float: left;
-      width: 250px;
-      height: 600px;
+      width: 20%;
+        min-height: 85%;
+        position: relative;
       background: black;
       color: white;
       font-size: 8;
       font-family: 'Source Sans Pro', Helvetica, sans-serif;
     }
     #console {
+        float: left;
         background: black;
         color: white;
         font-size: 8;
-        height: 100px;
-        width: 1250px;
+        min-height: 15%;
+        width: 100%;
     }
     #brand-title {
         font-weight: 200;
         font-size: 20px;
         text-align: left;
         font-family: 'Source Sans Pro', Helvetica, sans-serif;
+    }
+    #metadata {
+        position: absolute;
+        left: 0;
+        bottom: 0;
     }
     </style>
 </head>
@@ -88,9 +99,7 @@
                 },
                 edges: {
                     smooth: {
-                        enabled: true,
-                        type: 'continuous',
-                        roundness: 0.25
+                        enabled: false
                     },
                     width: 2,
                     color: {
@@ -144,7 +153,7 @@
                     zoomView: true
                 },
                 physics: {
-                    "stabilization": true,
+                    "stabilization": false,
                     "barnesHut": {
                         "gravitationalConstant": -17500,
                         "centralGravity": 0.35,
