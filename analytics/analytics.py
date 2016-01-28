@@ -7,6 +7,7 @@ from collections import Counter
 from collections import defaultdict
 from operator import itemgetter
 import geoloc
+import os
 
 dest_cc = 'NZ'
 unk_cc  = '*' # cc of a private ip address, etc.
@@ -78,6 +79,8 @@ def deviation_paths():
     stroutput = []
     for path in PATHS:
         source, goal = path["path"][0], path["path"][-1]
+        if source != goal and goal != unk_cc:
+            continue
         departed = False
         for hop in path["path"]:
             if hop["country"] not in [dest_cc, unk_cc]:
@@ -164,19 +167,31 @@ def main():
 
     # Parse cmd args
     parser = argparse.ArgumentParser("Analyses IP Path data")
-    parser.add_argument('--data', required=True, help="directory to read input and save output")
+    parser.add_argument('--data-dir', required=True,
+                        help="directory to read generic data files")
+    parser.add_argument('--path-dir', required=True,
+                        help="Directory to read IP paths and save analytics")
+    parser.add_argument('--country', required=False, default='NZ',
+                        help="Country to analyze paths against")
     args = parser.parse_args()
+
+    global OUTPUT_DIR
+    OUTPUT_DIR = os.path.join(args.path_dir, 'analytics')
+    if not os.path.exists(OUTPUT_DIR):
+        os.makedirs(OUTPUT_DIR)
+
+    dest_cc = args.country
 
     # Set up geolocation stuff
     print "Loaded geolocation data."
-    geoloc.load_db("geoip", args.data + "/GeoIP.dat")
-    geoloc.load_db("ip2location", args.data + "/IP-COUNTRY.bin")
-    geoloc.load_db("known_networks", args.data + "/known-networks.json")
+    geoloc.load_db("geoip", args.data_dir + "/GeoIP.dat")
+    geoloc.load_db("ip2location", args.data_dir + "/IP-COUNTRY.bin")
+    geoloc.load_db("known_networks", args.data_dir + "/known-networks.json")
 
     # Load traced paths
     print "Loaded paths."
     global PATHS
-    with open("{}/ip-path.json".format(args.data), 'rb') as ip_file:
+    with open("{}/ip-path.json".format(args.path_dir), 'rb') as ip_file:
         PATHS = json.load(ip_file)
 
     print "Running analytics. (0/5)"
