@@ -33,7 +33,7 @@ ${DATADIR}/dest-addr.json: find-targets-from-scans.py ${SCANDIR}/downloaded.txt 
 	python2 find-targets-from-scans.py --scandir ${SCANDIR} --datadir ${DATADIR} --topology-data ${SELECTED_TOPOLOGY_DATA}
 
 ${DATADIR}/measurements.json: ${DATADIR}/probes.json ${DATADIR}/dest-addr.json data/known-sites.txt
-	./probe-to-probe-traceroute.py --datadir ${DATADIR}
+	./probe-to-probe-traceroute.py --datadir ${DATADIR} --sample 0.5
 
 ${DATADIR}/results.json: ${DATADIR}/measurements.json
 	python2 fetch-results.py --datadir ${DATADIR}
