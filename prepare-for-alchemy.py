@@ -15,6 +15,11 @@ parser.add_argument('--datadir', required=True, help="directory to read input an
 parser.add_argument('--relfile', required=True, help="File with AS relationship data")
 args = parser.parse_args()
 
+"""Load the configuration file with the list of countries we are interested"""
+with open(os.path.join(args.datadir, 'config.json')) as f:
+    config = json.load(f)
+
+countries = set(config['PrimaryCountry'] + config['SecondaryCountry'] + ['IX'])
 
 with open("{}/bgp.json".format(args.datadir), 'rb') as bgp_file:
     map_data = json.load(bgp_file)
@@ -39,13 +44,15 @@ for node_deg in bgp_map.degree_iter():
     [asn, degree] = node_deg
     asn_str = str(asn)
     bgp_map.node[asn]['degree'] = degree
-    bgp_map.node[asn]['upstream'] = bgp_map.neighbors(asn)[0] if degree == 1 else asn
+    bgp_map.node[asn]['upstream'] = bgp_map.neighbors(asn)[0] \
+        if degree == 1 else asn
     # If I have info for this ASN and no info has been recorded before
     if asn_str in as_info and 'name' not in bgp_map.node[asn]:
         bgp_map.node[asn]['name'] = as_info[asn_str]['short_descr']
         bgp_map.node[asn]['descr'] = as_info[asn_str]['long_descr']
         # Add a group based on the country for all nodes
-        bgp_map.node[asn]['country'] = as_info[asn_str]['country'] if as_info[asn_str]['country'] in ['NZ', 'AU', 'IX'] else 'other'
+        bgp_map.node[asn]['country'] = as_info[asn_str]['country'] if \
+            as_info[asn_str]['country'] in countries else 'other'
 
     if 'country' in bgp_map.node[asn]:
         degree_set[bgp_map.node[asn]['country']].add(node_deg[1])
@@ -103,10 +110,16 @@ with open(os.path.join(args.datadir, 'vis-bgp-graph.js'), 'wb') as vis_file:
                               'width': 1,
                               'pairs': edge['pairs']})
 
-    vis_file.write("var nodes = {};\n".format(
-        json.dumps([{'id': node_idx[n],
+    nodes_export = [{'id': node_idx[n],
                      'label': v['label'],
                      'group': v['group'],
-                     'value': v['degree']} for n, v in bgp_nodes.iteritems()])))
+                     'value': v['degree']} for n, v in bgp_nodes.iteritems()]
+    vis_file.write("var nodes = {};\n".format(json.dumps(nodes_export)))
     vis_file.write("var edges = {};\n".format(json.dumps(bgp_edges)))
     vis_file.write("var metadata = {};\n".format(json.dumps(bgp_map.graph['metadata'])))
+
+# Generate the same data but exported in JSON format
+with open(os.path.join(args.datadir, 'vis-bgp-graph.json'), 'wb') as json_file:
+    json.dump({'metadata': bgp_map.graph['metadata'],
+               'nodes': nodes_export,
+               'edges': bgp_edges}, json_file)

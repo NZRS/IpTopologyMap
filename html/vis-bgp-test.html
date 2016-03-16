@@ -71,6 +71,7 @@
         var network;
         var highlightActive = false;
         var hl_edge = false;
+        var datafile = '/misc/data/vis-bgp-graph.json';
         // Data comes from the vis-bgp-graph.js file
         var vis_nodes = new vis.DataSet(nodes);
         var vis_edges = new vis.DataSet(edges);
@@ -107,7 +108,7 @@
                     }
                 },
                 groups: {
-                    AU: {
+                    PC: {
                         color: {
                             background: 'rgba(255,255,0,0.8)',
                             border: 'white',
@@ -117,7 +118,7 @@
                             }
                         }
                     },
-                    NZ: {
+                    SC: {
                         color: {
                             background: 'rgba(132,132,132,0.8)',
                             border: 'lightgrey',
@@ -178,7 +179,8 @@
             document.getElementById('metadata').innerHTML = "Updated on: " +
             metadata['updated'] + "<br/>" +
             "Number of traceroutes: " + metadata['tracert_num'] + "<br/>" +
-            "Number of probes: " + metadata['probes_num'];
+            "Number of probes: " + metadata['probes_num'] + "<br/>" +
+            "Raw <a href=\"" + datafile + "\">data</a>";
         }
 
         function neighbourHighlight(params) {

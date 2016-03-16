@@ -1,5 +1,8 @@
 REL_DAY=20150201
 DATADIR ?= data
+PRIM_COUNTRIES ?= NZ
+SEC_COUNTRIES ?= AU
+TRACE_SAMPLE_RATE ?= 0.5
 SCANDIR=${DATADIR}/scans
 PROD_DIR=/usr/share/nginx/ip-map/
 PROD_VIS_DIR=/usr/share/nginx/ip-map/vis/
@@ -19,21 +22,35 @@ data/known-networks.json: create-known-networks.py
 data/GeoIPASNum.dat:
 	wget -O - http://download.maxmind.com/download/geoip/database/asnum/GeoIPASNum.dat.gz | gzip -cd > $@
 
-${DATADIR}/probes.json: atlas-nz-probes.py
-	! test -d ${DATADIR} || mkdir -p ${DATADIR}
-	./atlas-nz-probes.py --datadir ${DATADIR}
+${DATADIR}/RIR-resources.json: RIR/extract-country-data-from-delegation.py ${DATADIR}/config.json
+	cd RIR && make CONFIG=../${DATADIR}/config.json OUTFILE=../$@ extract && cd ..
+
+config.json: ${DATADIR}/config.json
+
+${DATADIR}/config.json: create-config.py
+	mkdir -p ${DATADIR}
+	./create-config.py --datadir ${DATADIR} --primary ${PRIM_COUNTRIES} --secondary ${SEC_COUNTRIES}
+
+${DATADIR}/probes.json: list-atlas-probes.py ${DATADIR}/config.json
+	./list-atlas-probes.py --datadir ${DATADIR}
 
 ${SCANDIR}/downloaded.txt: download-scan-data.py
 	mkdir -p ${SCANDIR}
 	./download-scan-data.py --datadir ${SCANDIR}
 	touch $@
 
+${DATADIR}/dest-addr.json: find-targets-from-scans.py ${SCANDIR}/downloaded.txt ${DATADIR}/RIR-resources.json
+	python2 find-targets-from-scans.py --scandir ${SCANDIR} --datadir ${DATADIR}
 
-${DATADIR}/dest-addr.json: find-targets-from-scans.py ${SCANDIR}/downloaded.txt ${SELECTED_TOPOLOGY_DATA}
-	python2 find-targets-from-scans.py --scandir ${SCANDIR} --datadir ${DATADIR} --topology-data ${SELECTED_TOPOLOGY_DATA}
+known-sites.json: ${DATADIR}/known-sites.json
 
-${DATADIR}/measurements.json: ${DATADIR}/probes.json ${DATADIR}/dest-addr.json data/known-sites.txt
-	./probe-to-probe-traceroute.py --datadir ${DATADIR} --sample 0.5
+${DATADIR}/known-sites.json: fetch-alexa-top-sites.py ${DATADIR}/config.json
+	./fetch-alexa-top-sites.py --datadir ${DATADIR}
+
+msm-config: ${DATADIR}/probes.json ${DATADIR}/dest-addr.json ${DATADIR}/known-sites.json
+
+${DATADIR}/measurements.json: ${DATADIR}/probes.json ${DATADIR}/dest-addr.json ${DATADIR}/known-sites.json
+	./probe-to-probe-traceroute.py --datadir ${DATADIR} --sample ${TRACE_SAMPLE_RATE}
 
 ${DATADIR}/results.json: ${DATADIR}/measurements.json
 	python2 fetch-results.py --datadir ${DATADIR}
@@ -67,19 +84,19 @@ deploy-vis-bgp: ${DATADIR}/vis-bgp-graph.js html/vis-bgp-test.html
 	mkdir -p /var/www/visjs/misc/data
 	rsync -a bower_components/vis/dist/vis.map bower_components/vis/dist/vis.min.js bower_components/vis/dist/vis.js /var/www/visjs/scripts/
 	rsync -a bower_components/vis/dist/vis.css /var/www/visjs/styles/
-	rsync -a ${DATADIR}/vis-bgp-graph.js /var/www/visjs/misc/data
+	rsync -a ${DATADIR}/vis-bgp-graph.js ${DATADIR}/vis-bgp-graph.json /var/www/visjs/misc/data
 	rsync -a html/vis-bgp-test.html /var/www/visjs
 
 deploy-prod-vis-bgp: ${DATADIR}/vis-bgp-graph.js html/vis-bgp-test.html
-	ssh bgp-map-ext "mkdir -p ${PROD_VIS_DIR}/misc/data ${PROD_VIS_DIR}/scripts ${PROD_VIS_DIR}/styles"
-	rsync -a bower_components/vis/dist/vis.map bower_components/vis/dist/vis.min.js bower_components/vis/dist/vis.js bgp-map-ext:${PROD_VIS_DIR}/scripts
-	rsync -a bower_components/vis/dist/vis.css bgp-map-ext:${PROD_VIS_DIR}/styles/
-	rsync -a ${DATADIR}/vis-bgp-graph.js bgp-map-ext:${PROD_DIR}/misc/data/
-	rsync -a html/vis-bgp-test.html bgp-map-ext:${PROD_VIS_DIR}/index.html
+	ssh bgp-map "mkdir -p ${PROD_VIS_DIR}/misc/data ${PROD_VIS_DIR}/scripts ${PROD_VIS_DIR}/styles"
+	rsync -a bower_components/vis/dist/vis.map bower_components/vis/dist/vis.min.js bower_components/vis/dist/vis.js bgp-map:${PROD_VIS_DIR}/scripts
+	rsync -a bower_components/vis/dist/vis.css bgp-map:${PROD_VIS_DIR}/styles/
+	rsync -a ${DATADIR}/vis-bgp-graph.js ${DATADIR}/vis-bgp-graph.json bgp-map:${PROD_DIR}/misc/data/
+	rsync -a html/vis-bgp-test.html bgp-map:${PROD_VIS_DIR}/index.html
 
 deploy-prod-poc: ${DATADIR}/ip-network-graph.js html/ip-test.html
-	ssh bgp-map-ext "mkdir -p ${PROD_DIR}/misc/data ${PROD_DIR}/scripts ${PROD_DIR}/styles"
-	rsync -a bower_components/vis/dist/vis.map bower_components/vis/dist/vis.min.js bower_components/vis/dist/vis.js bgp-map-ext:${PROD_DIR}/scripts/
-	rsync -a bower_components/vis/dist/vis.css bgp-map-ext:${PROD_DIR}/styles/
-	rsync -a ${DATADIR}/ip-network-graph.js bgp-map-ext:${PROD_DIR}/misc/data/
-	rsync -a html/ip-test.html bgp-map-ext:${PROD_DIR}/poc/index.html
+	ssh bgp-map "mkdir -p ${PROD_DIR}/misc/data ${PROD_DIR}/scripts ${PROD_DIR}/styles"
+	rsync -a bower_components/vis/dist/vis.map bower_components/vis/dist/vis.min.js bower_components/vis/dist/vis.js bgp-map:${PROD_DIR}/scripts/
+	rsync -a bower_components/vis/dist/vis.css bgp-map:${PROD_DIR}/styles/
+	rsync -a ${DATADIR}/ip-network-graph.js bgp-map:${PROD_DIR}/misc/data/
+	rsync -a html/ip-test.html bgp-map:${PROD_DIR}/poc/index.html
