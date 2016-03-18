@@ -110,33 +110,41 @@ def valid_percent(s):
 
 parser = argparse.ArgumentParser("Analyses results")
 parser.add_argument('--datadir', required=True, help="directory to read input and save output")
-parser.add_argument('--sample', type=valid_percent, help="Use a sample instead of all traces available")
+parser.add_argument('--sample', required=True, type=valid_percent,
+                    help="Use a sample instead of all traces available")
 args = parser.parse_args()
 
 addr_list = set()
 res_file = "{}/results.json".format(args.datadir)
 ip_path_list = []
 probe_info = {}
+cc_set = set()
 
 with open(res_file, 'rb') as res_fd:
     res_blob = json.load(res_fd)
 
     if args.sample:
-        sample_sz = int((args.sample/100)*len(res_blob))
-        print("INFO: Picking sample {} of {}".format(sample_sz, len(res_blob)))
-        res_blob = random.sample(res_blob, sample_sz)
+        for cc, cc_res in res_blob.iteritems():
+            cc_set.add(cc)
+            sample_sz = int((args.sample/100)*len(cc_res))
+            print("INFO: Picking sample {} of {} for country {}".format(
+                sample_sz, len(cc_res), cc))
+            res_blob[cc] = random.sample(cc_res, sample_sz)
 
 # Preload information about the probes used
 with open(os.path.join(args.datadir, 'probes.json'), 'rb') as probe_file:
     probe_data = json.load(probe_file)
 
     # Iterate over the list and generate a dict hashed by the id
-    for info in probe_data:
-        probe_info['Probe %s' % info['id']] = {k: v for k, v in info.items() if k != 'id'}
+    for cc, cc_probe_list in probe_data.iteritems():
+        for info in cc_probe_list:
+            probe_info['Probe %s' % info['id']] = {k: v for k, v in info.items() if k != 'id'}
 
 G = nx.Graph()
 bgp = nx.Graph(metadata={'probes_num': len(probe_info),
-                         'tracert_num': len(res_blob)})
+                         'country': list(cc_set),
+                         'tracert_num': sum([len(v) for v in
+                                             res_blob.itervalues()])})
 nodes = set()
 edges = []
 
@@ -144,137 +152,138 @@ node_hops = defaultdict(set)
 unknown_addr = set()
 address_to_lookup = set()
 
-for res in res_blob:
-    sagan_res = TracerouteResult(res)
+for cc, res_set in res_blob.iteritems():
+    for res in res_set:
+        sagan_res = TracerouteResult(res)
 
-    print("Source = {}".format(sagan_res.source_address))
-    print("Origin = {}".format(sagan_res.origin))
-    address_to_lookup.add(sagan_res.origin)
-    addr_list.add(sagan_res.source_address)
-    print("Destination = {}".format(sagan_res.destination_address))
-    print("Hops = {}".format(sagan_res.total_hops))
-    print("Destination responded = {}".format(sagan_res.destination_ip_responded))
-    last_hop_detected = False
-    clean_ip_path = []
-    for hop in reversed(sagan_res.hops):
-        rtt_sum = Counter()
-        rtt_cnt = Counter()
-        rtt_avg = {}
+        print("Source = {}".format(sagan_res.source_address))
+        print("Origin = {}".format(sagan_res.origin))
+        address_to_lookup.add(sagan_res.origin)
+        addr_list.add(sagan_res.source_address)
+        print("Destination = {}".format(sagan_res.destination_address))
+        print("Hops = {}".format(sagan_res.total_hops))
+        print("Destination responded = {}".format(sagan_res.destination_ip_responded))
+        last_hop_detected = False
+        clean_ip_path = []
+        for hop in reversed(sagan_res.hops):
+            rtt_sum = Counter()
+            rtt_cnt = Counter()
+            rtt_avg = {}
 
-        for packet in hop.packets:
-            if packet.origin is None:
+            for packet in hop.packets:
+                if packet.origin is None:
+                    continue
+
+                if packet.rtt is not None:
+                    rtt_sum[packet.origin] += packet.rtt
+                    rtt_cnt[packet.origin] += 1
+
+            addr_in_hop = set()
+            for addr in rtt_cnt:
+                addr_list.add(addr)
+                addr_in_hop.add(addr)
+                rtt_avg[addr] = rtt_sum[addr] / rtt_cnt[addr]
+
+            if len(addr_in_hop) == 0 and not last_hop_detected:
+                # This is a hop that failed at the end of the path
                 continue
+            elif len(addr_in_hop) > 0:
+                last_hop_detected = True
 
-            if packet.rtt is not None:
-                rtt_sum[packet.origin] += packet.rtt
-                rtt_cnt[packet.origin] += 1
-
-        addr_in_hop = set()
-        for addr in rtt_cnt:
-            addr_list.add(addr)
-            addr_in_hop.add(addr)
-            rtt_avg[addr] = rtt_sum[addr] / rtt_cnt[addr]
-
-        if len(addr_in_hop) == 0 and not last_hop_detected:
-            # This is a hop that failed at the end of the path
-            continue
-        elif len(addr_in_hop) > 0:
-            last_hop_detected = True
-
-        # This hop was problematic, but it still part of the path
-        if len(addr_in_hop) == 0:
-            addr_in_hop_list = {'index': hop.index, 'hop_info': [{'addr': "unknown_hop", 'rtt': 0.0}]}
-        else:
-            addr_in_hop_list = {'index': hop.index, 'hop_info': [{'addr': k, 'rtt': v} for k, v in rtt_avg.items()]}
-        clean_ip_path.insert(0, addr_in_hop_list)
-
-    clean_ip_path.insert(0, {'index': 0, 'hop_info': [{'addr': "Probe %s" % sagan_res.probe_id, 'rtt': 0.0}]})
-    probe_addr["Probe %s" % sagan_res.probe_id] = sagan_res.origin
-
-    # Identify the AS corresponding to each hop
-    node_path = []
-    # print "** PATH with errors"
-    for hop in clean_ip_path:
-        hop_elem = []
-        for probe in hop['hop_info']:
-            name = name_hop(probe['addr'], sagan_res.probe_id, hop['index'])
-            [_c, grp] = class_from_name(name)
-            if grp == 'UNK':
-                unknown_addr.add(name)
-            hop_elem.append({'name': name, '_class': _c, 'group': grp, 'rtt': probe['rtt']})
-            address_to_lookup.add(name)
-            # print h, name, grp
-        node_path.append(hop_elem)
-
-    # Fill up the gaps where the AS obtained is not available
-    last_good = dict(group=None, idx=0)
-    invalid_in_path = False
-    for i in range(0, len(node_path)):
-        for hop in node_path[i]:
-            if not invalid_group(hop['group']):
-                if invalid_in_path and hop['group'] == last_good['group']:
-                    # Repair the sequence between here and the last good
-                    # print "** Attempting to repair index %s -> %s" % (last_good['idx']+1, i-1)
-                    for j in range(last_good['idx']+1, i):
-                        for hop_elem in node_path[j]:
-                            # print "-- Changing %s by %s" % (hop_elem['group'], hop['group'])
-                            if hop_elem['group'] in ['X0', 'Priv']:
-                                hop_elem['group'] = hop['group']
-                    invalid_in_path = False
-                last_good = dict(group=hop['group'], idx=i)
+            # This hop was problematic, but it still part of the path
+            if len(addr_in_hop) == 0:
+                addr_in_hop_list = {'index': hop.index, 'hop_info': [{'addr': "unknown_hop", 'rtt': 0.0}]}
             else:
-                invalid_in_path = True
+                addr_in_hop_list = {'index': hop.index, 'hop_info': [{'addr': k, 'rtt': v} for k, v in rtt_avg.items()]}
+            clean_ip_path.insert(0, addr_in_hop_list)
 
-    # Third iteration
-    # If there are still groups not determined, there is not much we can do to guess them,
-    # so we extend the last good group to cover for those
-    last_good_group = None
-    clean_path = []
-    for i in range(0, len(node_path)):
-        for hop in node_path[i]:
-            clean_path.append([hop['name'], hop['group']])
-            if invalid_group(hop['group']):
-                print("Pass3: Replace %s by %s" % (hop['group'], last_good_group))
-                hop['group'] = last_good_group
-            else:
-                last_good_group = hop['group']
+        clean_ip_path.insert(0, {'index': 0, 'hop_info': [{'addr': "Probe %s" % sagan_res.probe_id, 'rtt': 0.0}]})
+        probe_addr["Probe %s" % sagan_res.probe_id] = sagan_res.origin
 
-    temp_path = []
-    for n1, n2 in zip(node_path, clean_path):
-        # print("{name:>20}  {group:>8}".format(**n1[0]), " | ", "{0[0]:>20}  {0[1]:>8}".format(n2))
-        print("{0[0]:>20}  {0[1]:>8}".format(n2), " | ",
-              "{name:>20}  {group:>8}".format(**n1[0]))
-        temp_path.append({'addr': n1[0]['name'], 'asn': n1[0]['group'], 'rtt': n1[0]['rtt']})
+        # Identify the AS corresponding to each hop
+        node_path = []
+        # print "** PATH with errors"
+        for hop in clean_ip_path:
+            hop_elem = []
+            for probe in hop['hop_info']:
+                name = name_hop(probe['addr'], sagan_res.probe_id, hop['index'])
+                [_c, grp] = class_from_name(name)
+                if grp == 'UNK':
+                    unknown_addr.add(name)
+                hop_elem.append({'name': name, '_class': _c, 'group': grp, 'rtt': probe['rtt']})
+                address_to_lookup.add(name)
+                # print h, name, grp
+            node_path.append(hop_elem)
 
-    ip_path_list.append({'responded': sagan_res.destination_ip_responded, 'path': temp_path})
+        # Fill up the gaps where the AS obtained is not available
+        last_good = dict(group=None, idx=0)
+        invalid_in_path = False
+        for i in range(0, len(node_path)):
+            for hop in node_path[i]:
+                if not invalid_group(hop['group']):
+                    if invalid_in_path and hop['group'] == last_good['group']:
+                        # Repair the sequence between here and the last good
+                        # print "** Attempting to repair index %s -> %s" % (last_good['idx']+1, i-1)
+                        for j in range(last_good['idx']+1, i):
+                            for hop_elem in node_path[j]:
+                                # print "-- Changing %s by %s" % (hop_elem['group'], hop['group'])
+                                if hop_elem['group'] in ['X0', 'Priv']:
+                                    hop_elem['group'] = hop['group']
+                        invalid_in_path = False
+                    last_good = dict(group=hop['group'], idx=i)
+                else:
+                    invalid_in_path = True
 
-    """node_path now contains a sanitized version of the IP path"""
-    for i in range(1, len(node_path)):
-        for s in node_path[i - 1]:
-            for d in node_path[i]:
-                G.add_edge(s['name'], d['name'])
-                if s['group'] != d['group']:
-                    # This link is across different ASes, add it to the BGP
-                    # representation
-                    if bgp.has_edge(s['group'], d['group']):
-                        pairs = bgp[s['group']][d['group']]['pairs']
-                        pairs.add(ip_link(s['name'], d['name']))
-                    else:
-                        pairs = set([ip_link(s['name'], d['name'])])
+        # Third iteration
+        # If there are still groups not determined, there is not much we can do to guess them,
+        # so we extend the last good group to cover for those
+        last_good_group = None
+        clean_path = []
+        for i in range(0, len(node_path)):
+            for hop in node_path[i]:
+                clean_path.append([hop['name'], hop['group']])
+                if invalid_group(hop['group']):
+                    print("Pass3: Replace %s by %s" % (hop['group'], last_good_group))
+                    hop['group'] = last_good_group
+                else:
+                    last_good_group = hop['group']
 
-                    # Attribute pairs holds a set of IP links that constitute
-                    #  this AS relationship. Intended to be used to track
-                    # where organizations peer
-                    bgp.add_edge(s['group'], d['group'], pairs=pairs)
-                if s['group'] is None:
-                    print("** Node %s has NULL group" % s)
-                if d['group'] is None:
-                    print("** Node %s has NULL group" % d)
+        temp_path = []
+        for n1, n2 in zip(node_path, clean_path):
+            # print("{name:>20}  {group:>8}".format(**n1[0]), " | ", "{0[0]:>20}  {0[1]:>8}".format(n2))
+            print("{0[0]:>20}  {0[1]:>8}".format(n2), " | ",
+                  "{name:>20}  {group:>8}".format(**n1[0]))
+            temp_path.append({'addr': n1[0]['name'], 'asn': n1[0]['group'], 'rtt': n1[0]['rtt']})
 
-                G.node[s['name']]['group'] = s['group']
-                G.node[d['name']]['group'] = d['group']
-                G.node[s['name']]['_class'] = s['_class']
-                G.node[d['name']]['_class'] = d['_class']
+        ip_path_list.append({'responded': sagan_res.destination_ip_responded, 'path': temp_path})
+
+        """node_path now contains a sanitized version of the IP path"""
+        for i in range(1, len(node_path)):
+            for s in node_path[i - 1]:
+                for d in node_path[i]:
+                    G.add_edge(s['name'], d['name'])
+                    if s['group'] != d['group']:
+                        # This link is across different ASes, add it to the BGP
+                        # representation
+                        if bgp.has_edge(s['group'], d['group']):
+                            pairs = bgp[s['group']][d['group']]['pairs']
+                            pairs.add(ip_link(s['name'], d['name']))
+                        else:
+                            pairs = set([ip_link(s['name'], d['name'])])
+
+                        # Attribute pairs holds a set of IP links that constitute
+                        #  this AS relationship. Intended to be used to track
+                        # where organizations peer
+                        bgp.add_edge(s['group'], d['group'], pairs=pairs)
+                    if s['group'] is None:
+                        print("** Node %s has NULL group" % s)
+                    if d['group'] is None:
+                        print("** Node %s has NULL group" % d)
+
+                    G.node[s['name']]['group'] = s['group']
+                    G.node[d['name']]['group'] = d['group']
+                    G.node[s['name']]['_class'] = s['_class']
+                    G.node[d['name']]['_class'] = d['_class']
 
 # print "Looking up reverse entries, might take a while"
 # s = ReverseLookupService()

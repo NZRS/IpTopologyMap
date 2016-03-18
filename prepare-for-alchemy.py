@@ -51,10 +51,11 @@ for node_deg in bgp_map.degree_iter():
         bgp_map.node[asn]['name'] = as_info[asn_str]['short_descr']
         bgp_map.node[asn]['descr'] = as_info[asn_str]['long_descr']
         # Add a group based on the country for all nodes
-        bgp_map.node[asn]['country'] = as_info[asn_str]['country'] if \
+        bgp_map.node[asn]['country'] = as_info[asn_str]['country']
+        bgp_map.node[asn]['group'] = as_info[asn_str]['country'] if \
             as_info[asn_str]['country'] in countries else 'other'
 
-    if 'country' in bgp_map.node[asn]:
+    if 'group' in bgp_map.node[asn]:
         degree_set[bgp_map.node[asn]['country']].add(node_deg[1])
     else:
         print("** ASN %s has incomplete information: %s" % (asn,
@@ -93,8 +94,8 @@ with open("{}/bgp.alchemy.json".format(args.datadir), 'wb') as alchemy_file:
 with open(os.path.join(args.datadir, 'vis-bgp-graph.js'), 'wb') as vis_file:
     bgp_nodes = {}
     for n in json_dump['nodes']:
-        bgp_nodes[n['id']] = {'label': n['name'], 'group': n['country'],
-                              'degree': n['degree']}
+        bgp_nodes[n['id']] = {'label': n['name'], 'group': n['group'],
+                              'country': n['country'], 'degree': n['degree']}
 
     node_idx = {}
     idx = 0
@@ -113,6 +114,7 @@ with open(os.path.join(args.datadir, 'vis-bgp-graph.js'), 'wb') as vis_file:
     nodes_export = [{'id': node_idx[n],
                      'label': v['label'],
                      'group': v['group'],
+                     'country': v['country'],
                      'value': v['degree']} for n, v in bgp_nodes.iteritems()]
     vis_file.write("var nodes = {};\n".format(json.dumps(nodes_export)))
     vis_file.write("var edges = {};\n".format(json.dumps(bgp_edges)))

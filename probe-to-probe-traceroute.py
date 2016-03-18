@@ -21,8 +21,8 @@ def valid_fraction(s):
 
 
 def load_existing(source_dir, filename):
-    e = []
-    file_loc = "{}/{}".format(source_dir, filename)
+    e = defaultdict(list)
+    file_loc = os.path.join(source_dir, filename)
     if os.path.isfile(file_loc):
         with open(file_loc, 'rb') as s_file:
             e = json.load(s_file)
@@ -202,7 +202,7 @@ for cc, probe_list in cc_probe_list.iteritems():
                     msm_list[cc] = msm_list[cc] + status['list']
                     failed_msm[cc] = failed_msm[cc] + status['failed']
 
-    if args.retry:
+    if args.retry and not args.dry_run:
         print("Executing retries")
         with open(os.path.join(args.datadir, 'failed-msm.json')) as failed_file:
             prev_failed = json.load(failed_file)

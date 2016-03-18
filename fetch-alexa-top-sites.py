@@ -142,3 +142,4 @@ if __name__ == '__main__':
             json.dump(list(site_set), f)
     else:
         print("ERROR: Fetching failed, won't save a list")
+        exit(1)

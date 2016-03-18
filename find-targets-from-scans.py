@@ -71,7 +71,7 @@ for cc, cc_data in cc_prefix_list.iteritems():
         rt[cc].add(network=prefix, masklen=int(masklen))
 
 address_list = extract_unique_address_from_scans(glob.glob(os.path.join(
-    args.scandir, '*.csv.gz')), sample=True)
+    args.scandir, '*.csv.gz')), sample=False)
 
 print "%d addresses will be checked" % (len(address_list))
 selected_addr = defaultdict(list)
