@@ -19,8 +19,11 @@ data/$(REL_DAY).as-rel.txt:
 data/known-networks.json: create-known-networks.py
 	python2 create-known-networks.py
 
-data/GeoIPASNum.dat:
-	wget -O - http://download.maxmind.com/download/geoip/database/asnum/GeoIPASNum.dat.gz | gzip -cd > $@
+GeoIPASNum.dat.gz:
+	wget -N http://download.maxmind.com/download/geoip/database/asnum/GeoIPASNum.dat.gz
+
+data/GeoIPASNum.dat: GeoIPASNum.dat.gz
+	gzip -cd $? > $@
 
 ${DATADIR}/RIR-resources.json: RIR/extract-country-data-from-delegation.py ${DATADIR}/config.json
 	cd RIR && make CONFIG=../${DATADIR}/config.json OUTFILE=../$@ extract && cd ..
@@ -55,8 +58,12 @@ ${DATADIR}/measurements.json: ${DATADIR}/probes.json ${DATADIR}/dest-addr.json $
 ${DATADIR}/results.json: ${DATADIR}/measurements.json
 	python2 fetch-results.py --datadir ${DATADIR}
 
+${DATADIR}/peeringdb-dump.json: get-pdb-info.py
+	./get-pdb-info.py --datadir ${DATADIR}
+
 ${DATADIR}/bgp.json ${DATADIR}/ip.json ${DATADIR}/ip-path.json: ${DATADIR}/results.json\
-        data/known-networks.json analyze-results.py data/GeoIPASNum.dat
+        data/known-networks.json analyze-results.py data/GeoIPASNum.dat\
+        ${DATADIR}/peeringdb-dump.json
 	python2 analyze-results.py --datadir ${DATADIR} --sample 100
 
 ${DATADIR}/bgp.alchemy.json ${DATADIR}/vis-bgp-graph.js: prepare-for-alchemy.py ${DATADIR}/bgp.json

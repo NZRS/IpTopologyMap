@@ -4,5 +4,5 @@ ipaddr
 GeoIP
 dnspython
 progressbar
-pandas
 py-radix
+pybgpstream

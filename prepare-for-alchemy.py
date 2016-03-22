@@ -27,16 +27,34 @@ with open("{}/bgp.json".format(args.datadir), 'rb') as bgp_file:
     # bgp_map = nx.Graph(map_data)
     bgp_map = json_graph.node_link_graph(map_data)
 
-s = AsnNameLookupService()
-as_info = s.lookup_many([node for node in bgp_map.nodes_iter()])
-
+as_info = {}
 with open('data/base-as-info.json', 'rb') as base_as_info_file:
     base_info = json.load(base_as_info_file)
     as_info.update(base_info)
 
-# Save the collected AS info if needed for inspectin
+with open(os.path.join(args.datadir, 'collected-as-info.json')) as f:
+    collected_info = json.load(f)
+    as_info.update(collected_info)
+
+with open(os.path.join(args.datadir, 'as-info.pre.json'), 'wb') as as_file:
+    json.dump(as_info, as_file, indent=2, sort_keys=True)
+
+# TODO: Exclude from the list of lookups ASNs for which we do have
+# TODO: information in one way or other
+s = AsnNameLookupService()
+nodes_in_map = set([str(node) for node in bgp_map.nodes_iter()])
+nodes_with_info = set([k for k, v in as_info.items()
+                       if v.get('complete', True)])
+print("INFO: ASes in map %s" % nodes_in_map)
+print("INFO: ASes with info %s" % nodes_with_info)
+ases_to_look = nodes_in_map - nodes_with_info
+print("INFO: AS info to lookup: %s" % ases_to_look)
+as_lookup_info = s.lookup_many(ases_to_look)
+
+as_info.update(as_lookup_info)
+# Save the collected AS info if needed for inspecting
 with open(os.path.join(args.datadir, 'as-info.json'), 'wb') as as_file:
-    json.dump(as_info, as_file, indent=2)
+    json.dump(as_info, as_file, indent=2, sort_keys=True)
 
 degree_set = defaultdict(set)
 # Go over the list of nodes and add the degree attribute
@@ -54,9 +72,14 @@ for node_deg in bgp_map.degree_iter():
         bgp_map.node[asn]['country'] = as_info[asn_str]['country']
         bgp_map.node[asn]['group'] = as_info[asn_str]['country'] if \
             as_info[asn_str]['country'] in countries else 'other'
+    else:
+        if asn_str not in as_info:
+            print("** Couldn't lookup %s" % asn_str)
+        if 'name' in bgp_map.node[asn]:
+            print("** Node with info %s" % asn)
 
     if 'group' in bgp_map.node[asn]:
-        degree_set[bgp_map.node[asn]['country']].add(node_deg[1])
+        degree_set[bgp_map.node[asn]['group']].add(node_deg[1])
     else:
         print("** ASN %s has incomplete information: %s" % (asn,
                                                             bgp_map.node[asn]))
