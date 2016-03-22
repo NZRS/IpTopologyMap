@@ -7,24 +7,24 @@ from ripe.atlas.sagan import TracerouteResult
 import argparse
 import networkx as nx
 import ipaddr
-from collections import defaultdict
+from collections import defaultdict, Counter
 import re
 import GeoIP
 import itertools
 from networkx.readwrite import json_graph
 from reverse_lookup import ReverseLookupService
+import random
+import os
+import datetime
+from radix import Radix
 
 
 probe_addr = dict()
 g = GeoIP.open("data/GeoIPASNum.dat", GeoIP.GEOIP_STANDARD)
+rt = Radix()
+net_idx = {}
+known_as = {}
 
-# Preload a list of known network that are not in the routing table
-with open('data/known-networks.json', 'rb') as net_file:
-    known_net = json.load(net_file)
-
-    for prefix in known_net:
-        # Replace the member with the object that represents an IPv4Network
-        prefix['net'] = ipaddr.IPv4Network(prefix['net'])
 
 def name_hop(node, probe_id, seq):
     if node == "unknown_hop":
@@ -50,9 +50,22 @@ def org_from_addr(a):
         return org.split(' ')[0][2:]
     else:
         # Last attempt to look into the list of networks we know
-        for prefix in known_net:
-            if ipaddr.IPv4Address(a) in prefix['net']:
-                return prefix['group']
+        entry = rt.search_best(network=a, masklen=32)
+        if entry is not None:
+            try:
+                # We know something about this AS, save the information for
+                # later use
+                net_entry = net_idx[entry.prefix]
+                known_as[net_entry['ASN']] = {'country': net_entry['country'],
+                                              'short_descr': net_entry['name'],
+                                              'long_descr': net_entry['long_name'],
+                                              'complete': net_entry['complete']}
+                return net_entry['ASN']
+            except KeyError as e:
+                print("ERROR: Matching prefix %s for address %s is "
+                      "inconsistent: %s (%s)" % (entry.prefix, a, e,
+                                                 net_entry['source']))
+                return "UNK"
 
         # Last resort
         return "UNK"
@@ -64,8 +77,12 @@ def class_from_name(node):
     elif re.search('^Private', node):
         return [2, "Priv"]
     elif re.search('^Probe', node):
-        org = org_from_addr(probe_addr[node])
-        return [1, org]
+        # Try to use the probe info first
+        if node in probe_info:
+            return [1, probe_info[node]['asn_v4']]
+        else:
+            org = org_from_addr(probe_addr[node])
+            return [1, org]
     else:
         try:
             if ipaddr.IPv4Address(node).version == 4:
@@ -79,19 +96,91 @@ def invalid_group(g):
     return g in ['UNK', 'X0', 'Priv']
 
 
+def ip_link(src, tgt):
+    """
+    :param src: String representation of an IP address
+    :param tgt: String representation of an IP address
+    :return: String representation of an IP link, where source and target
+    addresses are ordered
+    """
+    return " - ".join(sorted([src, tgt]))
+
+
+def valid_percent(s):
+    v = float(s)
+    if v < 0.01 or v > 100:
+        raise argparse.ArgumentTypeError("sample value out of range [0.01, 100]")
+
+    return v
+
 parser = argparse.ArgumentParser("Analyses results")
 parser.add_argument('--datadir', required=True, help="directory to read input and save output")
+parser.add_argument('--sample', required=True, type=valid_percent,
+                    help="Use a sample instead of all traces available")
+parser.add_argument('-v', required=False, action='store_true',
+                    help="Be more verbose")
 args = parser.parse_args()
 
+# Preload a list of known network that are not in the routing table
+with open('data/known-networks.json', 'rb') as net_file:
+    known_networks = json.load(net_file)
+
+    for entry in known_networks:
+        rt.add(network=entry['net'])
+        net_idx[entry['net']] = {'ASN': entry['group'],
+                                 'name': entry['group'],
+                                 'country': entry.get('country', ''),
+                                 'long_name': entry['group'],
+                                 'complete': False,
+                                 'source': 'config'}
+
+# Preload the information we have from PeeringDB
+with open(os.path.join(args.datadir, 'peeringdb-dump.json')) as f:
+    ix_info = json.load(f)
+
+    # Iterate over the list and build a route table
+    for ix in ix_info:
+        for ixpfx in ix['ixpfx']:
+            rt.add(network=ixpfx)
+            net_idx[ixpfx] = {'ASN': ix['rs_asn'],
+                              'country': 'IX',
+                              'name': ix['name'],
+                              'long_name': ix['name_long'],
+                              'complete': True,
+                              'source': 'pdb'}
+
+
 addr_list = set()
-res_file = "{}/results.json".format(args.datadir)
+res_file = os.path.join(args.datadir, "results.json")
 ip_path_list = []
+probe_info = {}
+cc_set = set()
 
 with open(res_file, 'rb') as res_fd:
     res_blob = json.load(res_fd)
 
+    if args.sample:
+        for cc, cc_res in res_blob.iteritems():
+            cc_set.add(cc)
+            sample_sz = int((args.sample/100)*len(cc_res))
+            print("INFO: Picking sample {} of {} for country {}".format(
+                sample_sz, len(cc_res), cc))
+            res_blob[cc] = random.sample(cc_res, sample_sz)
+
+# Preload information about the probes used
+with open(os.path.join(args.datadir, 'probes.json'), 'rb') as probe_file:
+    probe_data = json.load(probe_file)
+
+    # Iterate over the list and generate a dict hashed by the id
+    for cc, cc_probe_list in probe_data.iteritems():
+        for info in cc_probe_list:
+            probe_info['Probe %s' % info['id']] = {k: v for k, v in info.items() if k != 'id'}
+
 G = nx.Graph()
-bgp = nx.Graph()
+bgp = nx.Graph(metadata={'probes_num': len(probe_info),
+                         'country': list(cc_set),
+                         'tracert_num': sum([len(v) for v in
+                                             res_blob.itervalues()])})
 nodes = set()
 edges = []
 
@@ -99,138 +188,195 @@ node_hops = defaultdict(set)
 unknown_addr = set()
 address_to_lookup = set()
 
-for res in res_blob:
-    sagan_res = TracerouteResult(res)
+for cc, res_set in res_blob.iteritems():
+    for res in res_set:
+        sagan_res = TracerouteResult(res)
 
-    print "Source = {}".format(sagan_res.source_address)
-    print "Origin = {}".format(sagan_res.origin)
-    address_to_lookup.add(sagan_res.origin)
-    addr_list.add(sagan_res.source_address)
-    print "Destination = {}".format(sagan_res.destination_address)
-    print "Hops = {}".format(sagan_res.total_hops)
-    print "Destination responded = {}".format(sagan_res.destination_ip_responded)
-    last_hop_detected = False
-    clean_ip_path = []
-    for ip_list in reversed(sagan_res.ip_path):
-        addr_in_hop = set()
-        for ip in ip_list:
-            if ip is not None:
-                addr_list.add(ip)
-                addr_in_hop.add(ip)
+        if args.v:
+            print("Source = %s" % sagan_res.source_address)
+            print("Origin = %s" % sagan_res.origin)
+            print("Destination = %s" % sagan_res.destination_address)
+            print("Hops = %s" % sagan_res.total_hops)
+            print("Destination responded = %s" % sagan_res.destination_ip_responded)
+        address_to_lookup.add(sagan_res.origin)
+        addr_list.add(sagan_res.source_address)
+        last_hop_detected = False
+        clean_ip_path = []
+        for hop in reversed(sagan_res.hops):
+            rtt_sum = Counter()
+            rtt_cnt = Counter()
+            rtt_avg = {}
 
-        if len(addr_in_hop) == 0 and not last_hop_detected:
-            # This is a hop that failed at the end of the path
-            continue
-        elif len(addr_in_hop) > 0:
-            last_hop_detected = True
+            for packet in hop.packets:
+                if packet.origin is None:
+                    continue
 
-        # This hop was problematic, but it still part of the path
-        if len(addr_in_hop) == 0:
-            addr_in_hop_list = ["unknown_hop"]
-        else:
-            addr_in_hop_list = list(addr_in_hop)
-        clean_ip_path.insert(0, addr_in_hop_list)
+                if packet.rtt is not None:
+                    rtt_sum[packet.origin] += packet.rtt
+                    rtt_cnt[packet.origin] += 1
 
-    clean_ip_path.insert(0, ["Probe %s" % sagan_res.probe_id])
-    probe_addr["Probe %s" % sagan_res.probe_id] = sagan_res.origin
+            addr_in_hop = set()
+            for addr in rtt_cnt:
+                addr_list.add(addr)
+                addr_in_hop.add(addr)
+                rtt_avg[addr] = rtt_sum[addr] / rtt_cnt[addr]
 
-    # Identify the AS corresponding to each hop
-    node_path = []
-    # print "** PATH with errors"
-    for i in range(0, len(clean_ip_path)):
-        hop_elem = []
-        for h in clean_ip_path[i]:
-            name = name_hop(h, sagan_res.probe_id, i)
-            [_c, grp] = class_from_name(name)
-            if grp == 'UNK':
-                unknown_addr.add(name)
-            hop_elem.append(dict(name=name, _class=_c, group=grp))
-            address_to_lookup.add(name)
-            # print h, name, grp
-        node_path.append(hop_elem)
+            if len(addr_in_hop) == 0 and not last_hop_detected:
+                # This is a hop that failed at the end of the path
+                continue
+            elif len(addr_in_hop) > 0:
+                last_hop_detected = True
 
-    # Fill up the gaps where the AS obtained is not available
-    last_good = dict(group=None, idx=0)
-    invalid_in_path = False
-    for i in range(0, len(node_path)):
-        for hop in node_path[i]:
-            if not invalid_group(hop['group']):
-                if invalid_in_path and hop['group'] == last_good['group']:
-                    # Repair the sequence between here and the last good
-                    # print "** Attempting to repair index %s -> %s" % (last_good['idx']+1, i-1)
-                    for j in range(last_good['idx']+1, i):
-                        for hop_elem in node_path[j]:
-                            # print "-- Changing %s by %s" % (hop_elem['group'], hop['group'])
-                            if hop_elem['group'] in ['X0', 'Priv']:
-                                hop_elem['group'] = hop['group']
-                    invalid_in_path = False
-                last_good = dict(group=hop['group'], idx=i)
+            # This hop was problematic, but it still part of the path
+            if len(addr_in_hop) == 0:
+                addr_in_hop_list = {'index': hop.index, 'hop_info': [{'addr': "unknown_hop", 'rtt': 0.0}]}
             else:
-                invalid_in_path = True
+                addr_in_hop_list = {'index': hop.index, 'hop_info': [{'addr': k, 'rtt': v} for k, v in rtt_avg.items()]}
+            clean_ip_path.insert(0, addr_in_hop_list)
 
-    # Third iteration
-    # If there are still groups not determined, there is not much we can do to guess them,
-    # so we extend the last good group to cover for those
-    last_good_group = None
-    clean_path = []
-    for i in range(0, len(node_path)):
-        for hop in node_path[i]:
-            clean_path.append([hop['name'], hop['group']])
-            if invalid_group(hop['group']):
-                print "Pass3: Replace %s by %s" % (hop['group'], last_good_group)
-                hop['group'] = last_good_group
-            else:
-                last_good_group = hop['group']
+        clean_ip_path.insert(0, {'index': 0, 'hop_info': [{'addr': "Probe %s" % sagan_res.probe_id, 'rtt': 0.0}]})
+        probe_addr["Probe %s" % sagan_res.probe_id] = sagan_res.origin
 
-    for n1, n2 in itertools.izip(node_path, clean_path):
-        print "{name:>20}  {group:>8}".format(**n1[0]), " | ", "{0[0]:>20}  {0[1]:>8}".format(n2)
-        ip_path_list.append([n1[0]['name'], n1[0]['group']])
+        # Identify the AS corresponding to each hop
+        node_path = []
+        # print "** PATH with errors"
+        for hop in clean_ip_path:
+            hop_elem = []
+            for probe in hop['hop_info']:
+                name = name_hop(probe['addr'], sagan_res.probe_id, hop['index'])
+                [_c, grp] = class_from_name(name)
+                if grp == 'UNK':
+                    unknown_addr.add(name)
+                hop_elem.append({'name': name, '_class': _c, 'group': grp, 'rtt': probe['rtt']})
+                address_to_lookup.add(name)
+                # print h, name, grp
+            node_path.append(hop_elem)
 
-    """node_path now contains a sanitized version of the IP path"""
-    for i in range(1, len(node_path)):
-        for s in node_path[i - 1]:
-            for d in node_path[i]:
-                G.add_edge(s['name'], d['name'])
-                if s['group'] != d['group']:
-                    bgp.add_edge(s['group'], d['group'])
-                G.node[s['name']]['group'] = s['group']
-                G.node[d['name']]['group'] = d['group']
-                G.node[s['name']]['_class'] = s['_class']
-                G.node[d['name']]['_class'] = d['_class']
+        # Fill up the gaps where the AS obtained is not available
+        last_good = dict(group=None, idx=0)
+        invalid_in_path = False
+        for i in range(0, len(node_path)):
+            for hop in node_path[i]:
+                if not invalid_group(hop['group']):
+                    if invalid_in_path and hop['group'] == last_good['group']:
+                        # Repair the sequence between here and the last good
+                        # print "** Attempting to repair index %s -> %s" % (last_good['idx']+1, i-1)
+                        for j in range(last_good['idx']+1, i):
+                            for hop_elem in node_path[j]:
+                                # print "-- Changing %s by %s" % (hop_elem['group'], hop['group'])
+                                if hop_elem['group'] in ['X0', 'Priv']:
+                                    hop_elem['group'] = hop['group']
+                        invalid_in_path = False
+                    last_good = dict(group=hop['group'], idx=i)
+                else:
+                    invalid_in_path = True
 
-print "Looking up reverse entries, might take a while"
-s = ReverseLookupService()
-address_info = s.lookup_many(address_to_lookup)
+        # Third iteration
+        # If there are still groups not determined, there is not much we can do to guess them,
+        # so we extend the last good group to cover for those
+        last_good_group = None
+        clean_path = []
+        for i in range(0, len(node_path)):
+            for hop in node_path[i]:
+                clean_path.append([hop['name'], hop['group']])
+                if invalid_group(hop['group']):
+                    if args.v:
+                        print("Pass3: Replace %s by %s" % (hop['group'], last_good_group))
+                    hop['group'] = last_good_group
+                else:
+                    last_good_group = hop['group']
 
-with open("{}/ip-path.json".format(args.datadir), 'wb') as ip_path_file:
-    json.dump(["{0:>20} {1:>40} {2:>8}".format(elem[0], address_info[elem[0]]['name'], elem[1]) for elem in ip_path_list], ip_path_file, indent=2)
+        temp_path = []
+        for n1, n2 in zip(node_path, clean_path):
+            # print("{name:>20}  {group:>8}".format(**n1[0]), " | ", "{0[0]:>20}  {0[1]:>8}".format(n2))
+            if args.v:
+                print("{0[0]:>20}  {0[1]:>8}".format(n2), " | ",
+                      "{name:>20}  {group:>8}".format(**n1[0]))
+            temp_path.append({'addr': n1[0]['name'], 'asn': n1[0]['group'], 'rtt': n1[0]['rtt']})
 
-with open("{}/addresses.json".format(args.datadir), 'wb') as addr_file:
+        ip_path_list.append({'responded': sagan_res.destination_ip_responded, 'path': temp_path})
+
+        """node_path now contains a sanitized version of the IP path"""
+        for i in range(1, len(node_path)):
+            for s in node_path[i - 1]:
+                for d in node_path[i]:
+                    G.add_edge(s['name'], d['name'])
+                    if s['group'] != d['group']:
+                        # This link is across different ASes, add it to the BGP
+                        # representation
+                        if bgp.has_edge(s['group'], d['group']):
+                            pairs = bgp[s['group']][d['group']]['pairs']
+                            pairs.add(ip_link(s['name'], d['name']))
+                        else:
+                            pairs = set([ip_link(s['name'], d['name'])])
+
+                        # Attribute pairs holds a set of IP links that constitute
+                        #  this AS relationship. Intended to be used to track
+                        # where organizations peer
+                        bgp.add_edge(s['group'], d['group'], pairs=pairs)
+                    if s['group'] is None:
+                        print("** Node %s has NULL group" % s)
+                    if d['group'] is None:
+                        print("** Node %s has NULL group" % d)
+
+                    G.node[s['name']]['group'] = s['group']
+                    G.node[d['name']]['group'] = d['group']
+                    G.node[s['name']]['_class'] = s['_class']
+                    G.node[d['name']]['_class'] = d['_class']
+
+# print "Looking up reverse entries, might take a while"
+# s = ReverseLookupService()
+# address_info = s.lookup_many(address_to_lookup)
+
+with open(os.path.join(args.datadir, "ip-path.json"), 'wb') as ip_path_file:
+    json.dump(ip_path_list, ip_path_file, indent=2)
+
+with open(os.path.join(args.datadir, "addresses.json"), 'wb') as addr_file:
     json.dump(list(addr_list), addr_file)
 
-with open("{}/graph.json".format(args.datadir), 'wb') as graph_file:
+node_list = []
+with open(os.path.join(args.datadir, "graph.json"), 'wb') as graph_file:
     node_idx = dict()
-    node_list = []
     idx = 0
     groups = defaultdict(list)
     for n in G.nodes_iter():
-        node_list.append(dict(name=n, _class=G.node[n]['_class'], group=G.node[n]['group']))
+        node_list.append({'name': n, 'label': n, 'id': n, '_class': G.node[n]['_class'], 'group': G.node[n]['group']})
         node_idx[n] = idx
         groups[G.node[n]['group']].append(idx)
         idx += 1
     json.dump(dict(links=[dict(source=node_idx[s], target=node_idx[t], weight=1) for s, t in G.edges_iter()],
                    nodes=node_list,
-                   groups=[dict(leaves=m, name=grp, padding=10) for grp, m in groups.iteritems()]), graph_file)
+                   groups=[dict(leaves=m, name=grp, padding=10) for grp, m in groups.items()]), graph_file)
+
+with open(os.path.join(args.datadir, "ip-network-graph.js"), "wb") as graph_file:
+    graph_file.write("var nodes = {};\n".format(json.dumps(node_list)))
+    edge_list = [{'to': t, 'from': s, 'width': 1} for s, t in G.edges_iter()]
+    graph_file.write("var edges = {};\n".format(json.dumps(edge_list)))
+
+# Save a version of IP graph in graphJSON
+with open(os.path.join(args.datadir, "ip.json"), 'wb') as ip_json_file:
+    json.dump(json_graph.node_link_data(G), ip_json_file)
 
 # Save a version in GraphML for gephi
-nx.write_graphml(bgp, "{}/bgp.graphml".format(args.datadir))
+# nx.write_graphml(bgp, "{}/bgp.graphml".format(args.datadir))
 
 # Save a version in graphJSON for Alchemy
+# This graph has an attribute 'pairs' that's a set, needs to be transformed
+# before dumping it
+for s, t, d in bgp.edges_iter(data=True):
+    bgp[s][t]['pairs'] = [p for p in d['pairs']]
+
+# Add the date of generation to the metadata in the BGP view
+bgp.graph['metadata']['updated'] = str(datetime.date.today())
 with open("{}/bgp.json".format(args.datadir), 'wb') as bgp_json_file:
     json.dump(json_graph.node_link_data(bgp), bgp_json_file)
+
 
 with open("{}/as-list.txt".format(args.datadir), 'wb') as as_list_file:
     as_list_file.writelines(["{0}\n".format(n) for n in bgp.nodes_iter()])
 
 with open("{}/unmappable-addresses.txt".format(args.datadir), "wb") as unk_addr_file:
     unk_addr_file.writelines([addr + "\n" for addr in sorted(unknown_addr)])
+
+with open(os.path.join(args.datadir, 'collected-as-info.json'), 'wb') as f:
+    json.dump(known_as, f)

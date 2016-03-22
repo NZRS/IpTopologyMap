@@ -2,3 +2,7 @@ ripe.atlas.sagan
 networkx
 ipaddr
 GeoIP
+dnspython
+progressbar
+py-radix
+pybgpstream

@@ -47,7 +47,7 @@ def printError(failure, domainname, asn):
     Print a friendly error message if the domainname could not be
     resolved.
     """
-    failure.trap(error.DNSNameError)
+    failure.trap(error.DNSNameError, error.DNSServerError)
     sys.stderr.write('ERROR: domain name not found %r\n' % (domainname,))
 
 

@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html>
+<head lang="en">
+    <meta charset="UTF-8">
+    <title>VisJS IP topology test</title>
+    <style type="text/css">
+    #ipvis {
+      height: 600px;
+      width: 1200px;
+      border: 1px solid lightgray;
+    }
+    #config {
+      float: left;
+      width: 400px;
+      height: 600px;
+    }
+
+    </style>
+</head>
+<body>
+    <input type="button" onclick="clusterAllByAs()" value="Cluster all nodes By AS"> <br />
+    <div id="ipvis"></div>
+    <div id="config"></div>
+
+    <script src="/scripts/vis.min.js"></script>
+    <script src="/misc/data/ip-network-graph.js"></script>
+
+    <script type="text/javascript">
+        var vis_nodes = new vis.DataSet(nodes);
+        var vis_edges = new vis.DataSet(edges);
+
+        var container = document.getElementById('ipvis');
+        var options = {
+            autoResize: true,
+            width: '100%',
+            height: '100%',
+            layout: {
+                randomSeed: 8
+            },
+            nodes: {
+                shape: 'dot',
+                size: 5,
+                physics: true
+            },
+            edges: {
+                smooth: false
+            },
+            interaction: {
+                navigationButtons: true,
+                zoomView: true
+            },
+            physics: {
+                "stabilization": true,
+                "barnesHut": {
+                    "gravitationalConstant": -17500,
+                    "centralGravity": 1.7,
+                    "springLength": 30,
+                    "springConstant": 0.05,
+                    "damping": 0.75,
+                    "avoidOverlap": 0.1
+                }
+            },
+            configure: {
+                enabled: true,
+                filter: "physics",
+                container: document.getElementById('config')
+            }
+        };
+
+        var data = {nodes:vis_nodes, edges: vis_edges}
+        var network = new vis.Network(container, data, options);
+        // clusterAllByAs();
+
+        function clusterByAs(as) {
+            // console.log("Clustering nodes in AS " + as);
+            clusterOptionsByData = {
+              joinCondition: function (childOptions) {
+                  /*
+                  return network.isCluster(params.nodes[0]) || childOptions.AS == as; // Cluster the nodes matching this AS
+                  */
+                  return childOptions.AS == as;
+              },
+              processProperties: function (clusterOptions, childNodes, childEdges) {
+                  var totalMass = 0;
+                  for (var i = 0; i < childNodes.length; i++) {
+                      totalMass += childNodes[i].mass;
+                  }
+                  clusterOptions.mass = totalMass;
+                  clusterOptions.value = childNodes.length;
+                  return clusterOptions;
+              },
+              clusterNodeProperties: {id: as, borderWidth: 2, shape: 'dot', label: 'AS ' + as, group: as}
+            }
+            network.cluster(clusterOptionsByData);
+        }
+
+        // if we click on a node, we want to open it up!
+        network.on("selectNode", function (params) {
+            if (params.nodes.length == 1) {
+                if (network.isCluster(params.nodes[0]) == true) {
+                    network.openCluster(params.nodes[0])
+                } else {
+                    clusterByAs(data.nodes._data[params.nodes[0]].AS);
+                }
+            }
+        });
+
+        function clusterAllByAs() {
+          for (var i = 0; i < ases.length; i++) {
+              clusterByAs(ases[i]);
+          }
+        }
+    </script>
+</body>
+</html>

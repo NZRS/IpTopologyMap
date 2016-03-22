@@ -51,6 +51,21 @@
     "short_descr": "Equinix Chicago",
     "long_descr": "Equinix Chicago"
   },
+  "180013": {
+    "country": "IX",
+    "short_descr": "AMS-IX Bay",
+    "long_descr": "AMS-IX Bay"
+  },
+  "180014": {
+    "country": "IX",
+    "short_descr": "CoreSite Any2 NoCal",
+    "long_descr": "CoreSite Any2 Northern California"
+  },
+  "180015": {
+    "country": "IX",
+    "short_descr": "AWS",
+    "long_descr": "Amazon Web Services"
+  },
     "9439" : {
         "long_descr" : "Wellington Internet Exchange (Citylink),NZ",
         "country" : "IX",
