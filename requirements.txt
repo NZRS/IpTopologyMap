@@ -6,3 +6,4 @@ dnspython
 progressbar
 py-radix
 pybgpstream
+requests
