@@ -5,7 +5,7 @@ SEC_COUNTRIES ?= AU
 TRACE_SAMPLE_RATE ?= 0.5
 SCANDIR=${DATADIR}/scans
 PROD_DIR=/usr/share/nginx/ip-map/
-PROD_VIS_DIR=/usr/share/nginx/ip-map/vis/
+PROD_VIS_DIR=/usr/share/nginx/ip-map/
 SELECTED_TOPOLOGY_DATA=data/country-aspath-selection.json
 
 all: ${DATADIR}/bgp.alchemy.json

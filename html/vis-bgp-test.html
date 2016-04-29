@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html>
+<html xmlns="http://www.w3.org/1999/html">
 <head lang="en">
     <meta charset="UTF-8">
     <title>IP Topology Map</title>
@@ -50,6 +50,7 @@
         <span id="brand-title"><span class="country"></span> IP Topology
             Map</span>
         <image height="80px" src="/images/NZRS_Logo_white.png"/>
+        <p>
         <ul>
             <li>Topology derived from hundreds of ICMP traceroutes,
                 originated from the <a href="https://atlas.ripe.net">RIPE
@@ -65,6 +66,16 @@
             <li>IP addresses mapped to ASN using MaxMind GeoIP database. AS Path derived from IP Path using custom code.</li>
             <li>Country and names for each AS fetched from Team Cymru <a href="http://www.team-cymru.org/IP-ASN-mapping.html">database</a></li>
         </ul>
+        </p>
+        <p>
+            <h3>Legend</h3>
+            <ul>
+            <li>Blue: Primary Country ASNs</li>
+            <li>Yellow: Secondary Country ASNs</li>
+            <li>Red: IXs</li>
+            <li>Green: Other Countries ASNs</li>
+            </ul>
+        </p>
         <span id="metadata"></span>
     </div>
     <div id="ipvis"></div>
