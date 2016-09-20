@@ -21,9 +21,14 @@ from radix import Radix
 
 probe_addr = dict()
 g = GeoIP.open("data/GeoIPASNum.dat", GeoIP.GEOIP_STANDARD)
+remapped_addr = {}
 rt = Radix()
 net_idx = {}
 known_as = {}
+
+
+def dpath(fname):
+    return os.path.join(args.datadir, fname)
 
 
 def name_hop(node, probe_id, seq):
@@ -49,23 +54,27 @@ def org_from_addr(a):
     if org is not None:
         return org.split(' ')[0][2:]
     else:
-        # Last attempt to look into the list of networks we know
-        entry = rt.search_best(network=a, masklen=32)
-        if entry is not None:
-            try:
-                # We know something about this AS, save the information for
-                # later use
-                net_entry = net_idx[entry.prefix]
-                known_as[net_entry['ASN']] = {'country': net_entry['country'],
-                                              'short_descr': net_entry['name'],
-                                              'long_descr': net_entry['long_name'],
-                                              'complete': net_entry['complete']}
-                return net_entry['ASN']
-            except KeyError as e:
-                print("ERROR: Matching prefix %s for address %s is "
-                      "inconsistent: %s (%s)" % (entry.prefix, a, e,
-                                                 net_entry['source']))
-                return "UNK"
+        # Look the remapped addresses
+        if a in remapped_addr:
+            return remapped_addr[a]
+        else:
+            # Last attempt to look into the list of networks we know
+            entry = rt.search_best(network=a, masklen=32)
+            if entry is not None:
+                try:
+                    # We know something about this AS, save the information for
+                    # later use
+                    ne = net_idx[entry.prefix]
+                    known_as[ne['ASN']] = {'country': ne['country'],
+                                                  'short_descr': ne['name'],
+                                                  'long_descr': ne['long_name'],
+                                                  'complete': ne['complete']}
+                    return ne['ASN']
+                except KeyError as e:
+                    print("ERROR: Matching prefix %s for address %s is "
+                          "inconsistent: %s (%s)" % (entry.prefix, a, e,
+                                                     ne['source']))
+                    return "UNK"
 
         # Last resort
         return "UNK"
@@ -79,7 +88,7 @@ def class_from_name(node):
     elif re.search('^Probe', node):
         # Try to use the probe info first
         if node in probe_info:
-            return [1, probe_info[node]['asn_v4']]
+            return [1, str(probe_info[node]['asn_v4'])]
         else:
             org = org_from_addr(probe_addr[node])
             return [1, org]
@@ -134,8 +143,14 @@ with open('data/known-networks.json', 'rb') as net_file:
                                  'complete': False,
                                  'source': 'config'}
 
+# Preload a list of addresses that are not mapped by GeoIP
+remapped_file = dpath('remapped-addresses.json')
+if os.path.exists(remapped_file):
+    with open(remapped_file) as f:
+        remapped_addr = json.load(f)
+
 # Preload the information we have from PeeringDB
-with open(os.path.join(args.datadir, 'peeringdb-dump.json')) as f:
+with open(dpath('peeringdb-dump.json')) as f:
     ix_info = json.load(f)
 
     # Iterate over the list and build a route table
@@ -151,12 +166,11 @@ with open(os.path.join(args.datadir, 'peeringdb-dump.json')) as f:
 
 
 addr_list = set()
-res_file = os.path.join(args.datadir, "results.json")
 ip_path_list = []
 probe_info = {}
 cc_set = set()
 
-with open(res_file, 'rb') as res_fd:
+with open(dpath("results.json"), 'rb') as res_fd:
     res_blob = json.load(res_fd)
 
     if args.sample:
@@ -168,7 +182,7 @@ with open(res_file, 'rb') as res_fd:
             res_blob[cc] = random.sample(cc_res, sample_sz)
 
 # Preload information about the probes used
-with open(os.path.join(args.datadir, 'probes.json'), 'rb') as probe_file:
+with open(dpath('probes.json'), 'rb') as probe_file:
     probe_data = json.load(probe_file)
 
     # Iterate over the list and generate a dict hashed by the id
@@ -328,14 +342,14 @@ for cc, res_set in res_blob.iteritems():
 # s = ReverseLookupService()
 # address_info = s.lookup_many(address_to_lookup)
 
-with open(os.path.join(args.datadir, "ip-path.json"), 'wb') as ip_path_file:
+with open(dpath("ip-path.json"), 'wb') as ip_path_file:
     json.dump(ip_path_list, ip_path_file, indent=2)
 
-with open(os.path.join(args.datadir, "addresses.json"), 'wb') as addr_file:
+with open(dpath("addresses.json"), 'wb') as addr_file:
     json.dump(list(addr_list), addr_file)
 
 node_list = []
-with open(os.path.join(args.datadir, "graph.json"), 'wb') as graph_file:
+with open(dpath("graph.json"), 'wb') as graph_file:
     node_idx = dict()
     idx = 0
     groups = defaultdict(list)
@@ -348,13 +362,13 @@ with open(os.path.join(args.datadir, "graph.json"), 'wb') as graph_file:
                    nodes=node_list,
                    groups=[dict(leaves=m, name=grp, padding=10) for grp, m in groups.items()]), graph_file)
 
-with open(os.path.join(args.datadir, "ip-network-graph.js"), "wb") as graph_file:
+with open(dpath("ip-network-graph.js"), "wb") as graph_file:
     graph_file.write("var nodes = {};\n".format(json.dumps(node_list)))
     edge_list = [{'to': t, 'from': s, 'width': 1} for s, t in G.edges_iter()]
     graph_file.write("var edges = {};\n".format(json.dumps(edge_list)))
 
 # Save a version of IP graph in graphJSON
-with open(os.path.join(args.datadir, "ip.json"), 'wb') as ip_json_file:
+with open(dpath("ip.json"), 'wb') as ip_json_file:
     json.dump(json_graph.node_link_data(G), ip_json_file)
 
 # Save a version in GraphML for gephi
@@ -368,15 +382,19 @@ for s, t, d in bgp.edges_iter(data=True):
 
 # Add the date of generation to the metadata in the BGP view
 bgp.graph['metadata']['updated'] = str(datetime.date.today())
-with open("{}/bgp.json".format(args.datadir), 'wb') as bgp_json_file:
-    json.dump(json_graph.node_link_data(bgp), bgp_json_file)
+with open(dpath('bgp.json'), 'wb') as bgp_json_file, \
+        open(dpath('bgp-node-seq.json'), 'wb') as f2:
+    _tmp_repr = json_graph.node_link_data(bgp)
+    json.dump(_tmp_repr, bgp_json_file)
+    json.dump([(i, _tmp_repr['nodes'][i]) for i in range(0, len(_tmp_repr[
+                                                                'nodes']))], f2)
 
 
-with open("{}/as-list.txt".format(args.datadir), 'wb') as as_list_file:
+with open(dpath("as-list.txt"), 'wb') as as_list_file:
     as_list_file.writelines(["{0}\n".format(n) for n in bgp.nodes_iter()])
 
-with open("{}/unmappable-addresses.txt".format(args.datadir), "wb") as unk_addr_file:
+with open(dpath('unmappable-addresses.txt'), "wb") as unk_addr_file:
     unk_addr_file.writelines([addr + "\n" for addr in sorted(unknown_addr)])
 
-with open(os.path.join(args.datadir, 'collected-as-info.json'), 'wb') as f:
+with open(dpath('collected-as-info.json'), 'wb') as f:
     json.dump(known_as, f)
