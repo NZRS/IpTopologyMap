@@ -1,5 +1,3 @@
-__author__ = 'secastro'
-
 import json
 import igraph
 import networkx as nx
@@ -10,6 +8,9 @@ from asn_name_lookup import AsnNameLookupService
 import argparse
 from as_relationship import AsRelationshipService
 import os
+import pycountry
+
+__author__ = 'secastro'
 
 parser = argparse.ArgumentParser("Prepare graph file for visualization")
 parser.add_argument('--datadir', required=True, help="directory to read input and save output")
@@ -26,6 +27,13 @@ with open("{}/bgp.json".format(args.datadir), 'rb') as bgp_file:
     map_data = json.load(bgp_file)
     # bgp_map = nx.Graph(map_data)
     bgp_map = json_graph.node_link_graph(map_data)
+
+# Annotate the bgp_map metadata with the names of the countries
+bgp_map.graph['metadata']['PriCountry'] = ", ".join([pycountry.countries.get(
+    alpha2=c).name for c in config['PrimaryCountry']])
+bgp_map.graph['metadata']['SecCountry'] = ", ".join([pycountry.countries.get(
+    alpha2=c).name for c in config['SecondaryCountry']])
+
 
 as_info = {}
 with open('data/base-as-info.json', 'rb') as base_as_info_file:
@@ -68,6 +76,7 @@ for node_deg in bgp_map.degree_iter():
     if asn_str in as_info and 'name' not in bgp_map.node[asn]:
         bgp_map.node[asn]['name'] = as_info[asn_str]['short_descr']
         bgp_map.node[asn]['descr'] = as_info[asn_str]['long_descr']
+        bgp_map.node[asn]['ASN'] = asn_str
         # Add a group based on the country for all nodes
         bgp_map.node[asn]['country'] = as_info[asn_str]['country']
         bgp_map.node[asn]['group'] = as_info[asn_str]['country'] if \
@@ -140,8 +149,11 @@ with open("{}/bgp.alchemy.json".format(args.datadir), 'wb') as alchemy_file:
 with open(os.path.join(args.datadir, 'vis-bgp-graph.js'), 'wb') as vis_file:
     bgp_nodes = {}
     for n in json_dump['nodes']:
-        bgp_nodes[n['id']] = {'label': n['name'], 'group': n['group'],
-                              'country': n['country'], 'degree': n['degree']}
+        bgp_nodes[n['id']] = {'label': n['name'],
+                              'group': n['group'],
+                              'ASN': n['ASN'],
+                              'country': n['country'],
+                              'degree': n['degree']}
 
     node_idx = {}
     idx = 0
@@ -161,6 +173,7 @@ with open(os.path.join(args.datadir, 'vis-bgp-graph.js'), 'wb') as vis_file:
                      'label': v['label'],
                      'group': v['group'],
                      'country': v['country'],
+                     'ASN': v['ASN'],
                      'value': v['degree']} for n, v in bgp_nodes.iteritems()]
     vis_file.write("var nodes = {};\n".format(json.dumps(nodes_export)))
     vis_file.write("var edges = {};\n".format(json.dumps(bgp_edges)))
