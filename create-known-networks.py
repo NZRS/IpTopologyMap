@@ -53,6 +53,9 @@ networks = [
             # dict(net='206.41.106.0/24', group='180013', country='US'), # AMS-IX Bay
             # dict(net='206.51.41.0/24', group='180014', country='US'), # CoreSite Any2 NoCal
             dict(net='52.95.36.0/24', group='180015', country='US'), # AWS
+            dict(net='52.84.0.0/14', group='16509', country='US'), # Amazon
+            dict(net='52.88.0.0/13', group='16509', country='US'), # Amazon
+            dict(net='54.224.0.0/12', group='16509', country='US'), # Amazon
             dict(net='218.100.21.0/24', group='9281'),
             dict(net='218.100.24.0/24', group='24388'),
             dict(net='202.174.183.0/24', group='24183', country='NZ'), # DTS New Zealand
