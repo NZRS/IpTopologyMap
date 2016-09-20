@@ -41,7 +41,7 @@
     #metadata {
         position: absolute;
         left: 0;
-        bottom: 0;
+        bottom: 10px;
     }
     </style>
 </head>
@@ -70,8 +70,8 @@
         <p>
             <h3>Legend</h3>
             <ul>
-            <li>Blue: Primary Country ASNs</li>
-            <li>Yellow: Secondary Country ASNs</li>
+            <li>Blue: <span id="PriCountry"></span></li>
+            <li>Yellow: <span id="SecCountry"></span></li>
             <li>Red: IXs</li>
             <li>Green: Other Countries ASNs</li>
             </ul>
@@ -81,215 +81,245 @@
     <div id="ipvis"></div>
     <div id="console">Information:<br/><span id="info_window"/></div>
 
-    <script src="/scripts/vis.min.js"></script>
-    <script src="/misc/data/vis-bgp-graph.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/vis/4.16.1/vis.min.js"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/vis/4.16.1/vis.min.css" rel="stylesheet" type="text/css" />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script>
 
     <script type="text/javascript">
         var network;
         var highlightActive = false;
         var hl_edge = false;
-        var datafile = '/misc/data/vis-bgp-graph.json';
-        // Data comes from the vis-bgp-graph.js file
-        var vis_nodes = new vis.DataSet(nodes);
-        var vis_edges = new vis.DataSet(edges);
+        var datafile = '/misc/data/full-network.json';
 
-        function redrawAll() {
-            var container = document.getElementById('ipvis');
-            var options = {
-                autoResize: true,
-                width: '100%',
-                height: '100%',
-                interaction: {
+        $.getJSON(datafile, function(data, status) {
+            var nodes = [];
+            var edges = [];
+            var vis_nodes, vis_edges;
+            var metadata;
 
-                },
-                layout: {
-                    randomSeed: 8
-                },
-                nodes: {
-                    shape: 'dot',
-                    size: 20,
-                    physics: true,
-                    borderWidth: 1,
-                    font: {
-                        color: 'white',
-                        size: 10
-                    }
-                },
-                edges: {
-                    smooth: {
-                        enabled: false
+            $.each(data['nodes'], function (i, entry) {
+                nodes.push({
+                    'id': entry.id,
+                    'label': entry.label,
+                    'asn': entry.ASN,
+                    'group': entry.group,
+                    'country': entry.country,
+                    'value': entry.value,
+                    'x': entry.x_pos,
+                    'y': entry.y_pos
+                });
+            });
+
+            $.each(data['edges'], function (i, entry) {
+                edges.push({
+                    'to': entry.to,
+                    'from': entry.from,
+                    'class': entry.class,
+                    'value': entry.value
+                });
+            });
+
+            metadata = data['metadata'];
+
+            redrawAll();
+
+            function redrawAll() {
+                var container = document.getElementById('ipvis');
+                vis_edges = new vis.DataSet(edges);
+                vis_nodes = new vis.DataSet(nodes);
+                var options = {
+                    autoResize: true,
+                    width: '100%',
+                    height: '100%',
+                    interaction: {
+
                     },
-                    width: 2,
-                    color: {
-                        color: 'rgba(255,255,255,0.3)'
-                    }
-                },
-                groups: {
-                    PC: {
+                    layout: {
+                        randomSeed: 8
+                    },
+                    nodes: {
+                        shape: 'dot',
+                        size: 20,
+                        physics: false,
+                        borderWidth: 0.5,
+                        font: {
+                            color: 'white',
+                            size: 10
+                        }
+                    },
+                    edges: {
+                        smooth: {
+                            enabled: false
+                        },
+                        width: 1.5,
                         color: {
-                            background: 'rgba(255,255,0,0.8)',
-                            border: 'white',
-                            highlight: {
-                                background: 'rgba(255,255,0,1.0)',
-                                border: 'white'
+                            color: 'rgba(211,211,211,0.1)',
+                            highlight: 'rgba(211,211,211,0.6)'
+                        }
+                    },
+                    groups: {
+                        PC: {
+                            color: {
+                                background: 'rgba(255,255,0,0.8)',
+                                border: 'white',
+                                highlight: {
+                                    background: 'rgba(255,255,0,1.0)',
+                                    border: 'white'
+                                }
+                            }
+                        },
+                        SC: {
+                            color: {
+                                background: 'rgba(132,132,132,0.8)',
+                                border: 'lightgrey',
+                                highlight: {
+                                    background: 'rgba(132,132,132,1.0)',
+                                    border: 'lightgrey'
+                                }
+                            }
+                        },
+                        IX: {
+                            color: {
+                                background: 'rgba(255,0,64,0.8)',
+                                border: 'pink',
+                                highlight: {
+                                    background: 'rgba(255,0,64,1.0)',
+                                    border: 'pink'
+                                }
+                            }
+                        },
+                        other: {
+                            color: {
+                                background: 'rgba(8,138,8,0.8)',
+                                border: 'limegreen',
+                                highlight: {
+                                    background: 'rgba(8,138,8,1.0)',
+                                    border: 'limegreen'
+                                }
                             }
                         }
                     },
-                    SC: {
-                        color: {
-                            background: 'rgba(132,132,132,0.8)',
-                            border: 'lightgrey',
-                            highlight: {
-                                background: 'rgba(132,132,132,1.0)',
-                                border: 'lightgrey'
-                            }
-                        }
-                    },
-                    IX: {
-                        color: {
-                            background: 'rgba(255,0,64,0.8)',
-                            border: 'pink',
-                            highlight: {
-                                background: 'rgba(255,0,64,1.0)',
-                                border: 'pink'
-                            }
-                        }
-                    },
-                    other: {
-                        color: {
-                            background: 'rgba(8,138,8,0.8)',
-                            border: 'limegreen',
-                            highlight: {
-                                background: 'rgba(8,138,8,1.0)',
-                                border: 'limegreen'
-                            }
-                        }
+                    interaction: {
+                        navigationButtons: true,
+                        zoomView: true,
+                        dragNodes: false,
+                        hideEdgesOnDrag: true
                     }
-                },
-                interaction: {
-                    navigationButtons: true,
-                    zoomView: true
-                },
-                physics: {
-                    "stabilization": false,
-                    "barnesHut": {
-                        "gravitationalConstant": -17500,
-                        "centralGravity": 0.35,
-                        "springLength": 220,
-                        "springConstant": 0.05,
-                        "damping": 0.75,
-                        "avoidOverlap": 0.75
+                };
+
+                var data = {nodes:vis_nodes, edges: vis_edges}
+                network = new vis.Network(container, data, options);
+                allNodes = vis_nodes.get({returnType: 'Object'});
+                allEdges = vis_edges.get({returnType: 'Object'});
+                // Do this to save the location of nodes in the network once the
+                // physics simulation finishes
+                network.on('stabilized', function() { network.storePositions(); });
+                network.on('click', neighbourHighlight);
+
+                // Display the metadata
+                document.getElementById('metadata').innerHTML = "Updated on: " +
+                metadata['updated'] + "<br/>" +
+                "Number of traceroutes: " + metadata['tracert_num'] + "<br/>" +
+                "Number of probes: " + metadata['probes_num'] + "<br/>" +
+                "Raw <a href=\"" + datafile + "\">data</a>";
+
+                // Add references in the legend to the country name
+                document.getElementById('PriCountry').innerHTML = metadata['PriCountry'];
+                document.getElementById('SecCountry').innerHTML = metadata['SecCountry'];
+
+                // Change the template to add the country
+                cc_labels = document.getElementsByClassName('country');
+                for (cc_idx in cc_labels) {
+                    cc_labels[cc_idx].innerHTML = metadata['PriCountry'];
+                }
+            }
+
+            function neighbourHighlight(params) {
+                // Click on an edge
+                if (params.nodes.length == 0 && params.edges.length > 0) {
+                    var selectedEdge = params.edges[0]
+                    hl_edge = true;
+                    document.getElementById('info_window').innerHTML = "<b>IP addresses for this edge:<b/><br/>" +
+                        allEdges[selectedEdge]['pairs'].join("<br/>");
+                }
+                // Click on a node
+                else if (params.nodes.length > 0) {
+                  highlightActive = true;
+                  var i,j;
+                  var selectedNode = params.nodes[0];
+                  var degrees = 1;
+
+                  // mark all nodes as hard to read.
+                  for (var nodeId in allNodes) {
+                    allNodes[nodeId].color = 'rgba(100,100,100,0.5)';
+                    if (allNodes[nodeId].hiddenLabel === undefined) {
+                      allNodes[nodeId].hiddenLabel = allNodes[nodeId].label;
+                      allNodes[nodeId].label = undefined;
                     }
+                  }
+
+                  var connectedNodes = network.getConnectedNodes(selectedNode);
+                  var allConnectedNodes = [];
+
+                  // get all connected nodes to a degree
+                  for (i = 1; i < degrees; i++) {
+                    for (j = 0; j < connectedNodes.length; j++) {
+                      allConnectedNodes = allConnectedNodes.concat(network.getConnectedNodes(connectedNodes[j]));
+                    }
+                  }
+
+                  // all first degree nodes get their own color and their label back
+                  for (i = 0; i < connectedNodes.length; i++) {
+                    allNodes[connectedNodes[i]].color = undefined;
+                    if (allNodes[connectedNodes[i]].hiddenLabel !== undefined) {
+                      allNodes[connectedNodes[i]].label = allNodes[connectedNodes[i]].hiddenLabel;
+                      allNodes[connectedNodes[i]].hiddenLabel = undefined;
+                    }
+                  }
+
+                  // the main node gets its own color and its label back.
+                  allNodes[selectedNode].color = undefined;
+                  if (allNodes[selectedNode].hiddenLabel !== undefined) {
+                    allNodes[selectedNode].label = allNodes[selectedNode].hiddenLabel;
+                    allNodes[selectedNode].hiddenLabel = undefined;
+                  }
+
+                  // Provide some information about the node
+                  var thisNode = allNodes[selectedNode];
+                  document.getElementById('info_window').innerHTML = "<b>Node info:<b/><br/>" +
+                        "<b>Name:</b> " + thisNode.label + "<br/>" +
+                        "<b>ASN:</b> " + thisNode.asn + "<br/>" +
+                        "<b># Peers:</b> " + thisNode.value + "<br/>" +
+                        "<b>Country:</b> " + thisNode.country;
+
                 }
-            };
-
-            var data = {nodes:vis_nodes, edges: vis_edges}
-            network = new vis.Network(container, data, options);
-            allNodes = vis_nodes.get({returnType: 'Object'});
-            allEdges = vis_edges.get({returnType: 'Object'});
-            // Do this to save the location of nodes in the network once the
-            // physics simulation finishes
-            network.on('stabilized', function() { network.storePositions(); });
-            network.on('click', neighbourHighlight);
-
-            // Display the metadata
-            document.getElementById('metadata').innerHTML = "Updated on: " +
-            metadata['updated'] + "<br/>" +
-            "Number of traceroutes: " + metadata['tracert_num'] + "<br/>" +
-            "Number of probes: " + metadata['probes_num'] + "<br/>" +
-            "Raw <a href=\"" + datafile + "\">data</a>";
-
-            // Change the template to add the country
-            cc_labels = document.getElementsByClassName('country');
-            for (cc_idx in cc_labels) {
-                cc_labels[cc_idx].innerHTML = metadata['country'];
-            }
-        }
-
-        function neighbourHighlight(params) {
-            // Click on an edge
-            if (params.nodes.length == 0 && params.edges.length > 0) {
-                var selectedEdge = params.edges[0]
-                hl_edge = true;
-                document.getElementById('info_window').innerHTML = "<b>IP addresses for this edge:<b/><br/>" +
-                    allEdges[selectedEdge]['pairs'].join("<br/>");
-            }
-            // Click on a node
-            else if (params.nodes.length > 0) {
-              highlightActive = true;
-              var i,j;
-              var selectedNode = params.nodes[0];
-              var degrees = 1;
-
-              // mark all nodes as hard to read.
-              for (var nodeId in allNodes) {
-                allNodes[nodeId].color = 'rgba(100,100,100,0.5)';
-                if (allNodes[nodeId].hiddenLabel === undefined) {
-                  allNodes[nodeId].hiddenLabel = allNodes[nodeId].label;
-                  allNodes[nodeId].label = undefined;
+                else if (highlightActive === true) {
+                  // reset all nodes
+                  for (var nodeId in allNodes) {
+                    allNodes[nodeId].color = undefined;
+                    if (allNodes[nodeId].hiddenLabel !== undefined) {
+                      allNodes[nodeId].label = allNodes[nodeId].hiddenLabel;
+                      allNodes[nodeId].hiddenLabel = undefined;
+                    }
+                  }
+                  highlightActive = false
                 }
-              }
-
-              var connectedNodes = network.getConnectedNodes(selectedNode);
-              var allConnectedNodes = [];
-
-              // get all connected nodes to a degree
-              for (i = 1; i < degrees; i++) {
-                for (j = 0; j < connectedNodes.length; j++) {
-                  allConnectedNodes = allConnectedNodes.concat(network.getConnectedNodes(connectedNodes[j]));
+                else if (hl_edge === true) {
+                    document.getElementById('info_window').innerHTML = '';
                 }
-              }
 
-              // all first degree nodes get their own color and their label back
-              for (i = 0; i < connectedNodes.length; i++) {
-                allNodes[connectedNodes[i]].color = undefined;
-                if (allNodes[connectedNodes[i]].hiddenLabel !== undefined) {
-                  allNodes[connectedNodes[i]].label = allNodes[connectedNodes[i]].hiddenLabel;
-                  allNodes[connectedNodes[i]].hiddenLabel = undefined;
+                // transform the object into an array
+                var updateArray = [];
+                for (nodeId in allNodes) {
+                  if (allNodes.hasOwnProperty(nodeId)) {
+                    updateArray.push(allNodes[nodeId]);
+                  }
                 }
-              }
-
-              // the main node gets its own color and its label back.
-              allNodes[selectedNode].color = undefined;
-              if (allNodes[selectedNode].hiddenLabel !== undefined) {
-                allNodes[selectedNode].label = allNodes[selectedNode].hiddenLabel;
-                allNodes[selectedNode].hiddenLabel = undefined;
-              }
-
-              // Provide some information about the node
-              var thisNode = allNodes[selectedNode];
-              document.getElementById('info_window').innerHTML = "<b>Node info:<b/><br/>" +
-                    "<b>Name:</b> " + thisNode.label + "<br/>" +
-                    "<b>Peers:</b> " + thisNode.value + "<br/>" +
-                    "<b>Country:</b> " + thisNode.country;
-
+                vis_nodes.update(updateArray);
             }
-            else if (highlightActive === true) {
-              // reset all nodes
-              for (var nodeId in allNodes) {
-                allNodes[nodeId].color = undefined;
-                if (allNodes[nodeId].hiddenLabel !== undefined) {
-                  allNodes[nodeId].label = allNodes[nodeId].hiddenLabel;
-                  allNodes[nodeId].hiddenLabel = undefined;
-                }
-              }
-              highlightActive = false
-            }
-            else if (hl_edge === true) {
-                document.getElementById('info_window').innerHTML = '';
-            }
+        });
 
-            // transform the object into an array
-            var updateArray = [];
-            for (nodeId in allNodes) {
-              if (allNodes.hasOwnProperty(nodeId)) {
-                updateArray.push(allNodes[nodeId]);
-              }
-            }
-            vis_nodes.update(updateArray);
-        }
 
-        redrawAll()
     </script>
 </body>
 </html>

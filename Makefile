@@ -12,6 +12,8 @@ all: ${DATADIR}/bgp.alchemy.json
 
 analytics: ${DATADIR}/expanded-ip-path.json
 
+retry: ${DATADIR}/retry.json
+
 data/$(REL_DAY).as-rel.txt:
 	wget -O - http://data.caida.org/datasets/as-relationships/serial-1/$(REL_DAY).as-rel.txt.bz2 | bzip2 -cd > $@_
 	mv $@_ $@
@@ -52,22 +54,36 @@ ${DATADIR}/known-sites.json: fetch-alexa-top-sites.py ${DATADIR}/config.json
 
 msm-config: ${DATADIR}/probes.json ${DATADIR}/dest-addr.json ${DATADIR}/known-sites.json
 
+${DATADIR}/retry.json: ${DATADIR}/failed-msm.json
+	./probe-to-probe-traceroute.py --datadir ${DATADIR} --retry
+
 ${DATADIR}/measurements.json: ${DATADIR}/probes.json ${DATADIR}/dest-addr.json ${DATADIR}/known-sites.json
 	./probe-to-probe-traceroute.py --datadir ${DATADIR} --sample ${TRACE_SAMPLE_RATE}
 
 ${DATADIR}/results.json: ${DATADIR}/measurements.json
 	python2 fetch-results.py --datadir ${DATADIR}
 
+peeringdb: ${DATADIR}/peeringdb-dump.json
+
 ${DATADIR}/peeringdb-dump.json: get-pdb-info.py
 	./get-pdb-info.py --datadir ${DATADIR}
 
+${DATADIR}/remapped-addresses.json: map-addresses.py
+	python2 map-addresses.py --datadir ${DATADIR}
+
 ${DATADIR}/bgp.json ${DATADIR}/ip.json ${DATADIR}/ip-path.json: ${DATADIR}/results.json\
         data/known-networks.json analyze-results.py data/GeoIPASNum.dat\
-        ${DATADIR}/peeringdb-dump.json
+        ${DATADIR}/peeringdb-dump.json ${DATADIR}/remapped-addresses.json
 	python2 analyze-results.py --datadir ${DATADIR} --sample 100
 
-${DATADIR}/bgp.alchemy.json ${DATADIR}/vis-bgp-graph.js: prepare-for-alchemy.py ${DATADIR}/bgp.json
+${DATADIR}/vis-bgp-graph.json ${DATADIR}/vis-bgp-graph.js: prepare-for-alchemy.py ${DATADIR}/bgp.json
 	python2 prepare-for-alchemy.py --datadir ${DATADIR} --relfile data/$(REL_DAY).as-rel.txt
+
+${DATADIR}/node-position.json: run-physics-simulation.py ${DATADIR}/vis-bgp-graph.json
+	python2 run-physics-simulation.py --datadir ${DATADIR}
+
+${DATADIR}/full-network.json: merge-network-layout.py ${DATADIR}/node-position.json
+	python2 merge-network-layout.py --datadir ${DATADIR}
 
 ${DATADIR}/ip-network-graph.js: ${DATADIR}/ip.json alchemy2vis.py
 	python alchemy2vis.py --datadir ${DATADIR}
@@ -87,11 +103,9 @@ deploy-test: ${DATADIR}/ip-network-graph.js html/ip-test.html
 	rsync -a ${DATADIR}/ip-network-graph.js /var/www/visjs/misc/data
 	rsync -a html/ip-test.html /var/www/visjs
 
-deploy-vis-bgp: ${DATADIR}/vis-bgp-graph.js html/vis-bgp-test.html
+deploy-vis-bgp: ${DATADIR}/full-network.json html/vis-bgp-test.html
 	mkdir -p /var/www/visjs/misc/data
-	rsync -a bower_components/vis/dist/vis.map bower_components/vis/dist/vis.min.js bower_components/vis/dist/vis.js /var/www/visjs/scripts/
-	rsync -a bower_components/vis/dist/vis.css /var/www/visjs/styles/
-	rsync -a ${DATADIR}/vis-bgp-graph.js ${DATADIR}/vis-bgp-graph.json /var/www/visjs/misc/data
+	rsync -a ${DATADIR}/full-network.json /var/www/visjs/misc/data
 	rsync -a html/vis-bgp-test.html /var/www/visjs
 
 deploy-prod-vis-bgp: ${DATADIR}/vis-bgp-graph.js html/vis-bgp-test.html

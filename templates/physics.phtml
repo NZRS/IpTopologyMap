@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/html">
+<head lang="en">
+    <meta charset="UTF-8">
+    <title>Topology Map</title>
+    <style type="text/css">
+    html, body {
+        width: 100%;
+        height: 100%;
+    }
+    #ipvis {
+      height: 65%;
+      width: 60%;
+      background: black;
+        margin-left: 20%;
+    }
+    #legend {
+      float: left;
+      width: 20%;
+      min-height: 65%;
+      position: relative;
+      background: black;
+      color: white;
+      font-size: 8;
+      font-family: 'Source Sans Pro', Helvetica, sans-serif;
+    }
+    #console {
+        float: left;
+        background: black;
+        color: white;
+        font-size: 8;
+        min-height: 15%;
+        width: 100%;
+    }
+    #brand-title {
+        font-weight: 200;
+        font-size: 20px;
+        text-align: left;
+        font-family: 'Source Sans Pro', Helvetica, sans-serif;
+    }
+    #metadata {
+        position: absolute;
+        left: 0;
+        bottom: 0;
+    }
+    #config {
+        float: left;
+        width: 400px;
+        height: 600px;
+    }
+    </style>
+</head>
+<body>
+    <div id="legend">
+        <span id="brand-title">IP Topology Map</span>
+        <span id="metadata"></span>
+    </div>
+    <div id="ipvis"></div>
+    <div id="config"></div>
+    <div id="console">Information:<br/><span id="info_window"/></div>
+
+
+    <script
+        src="https://cdnjs.cloudflare.com/ajax/libs/vis/4.16.1/vis.min.js"></script>
+    <link
+    href="https://cdnjs.cloudflare.com/ajax/libs/vis/4.16.1/vis.min.css" rel="stylesheet" type="text/css" />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script>
+
+    <script type="text/javascript">
+        // Some variables for the network
+        var network;
+        var highlightActive = false;
+        var hl_edge = false;
+
+        // Read existing data from IDP to discover the latest map available
+        var map_url = "{{ map_data_file }}";
+        $.getJSON(map_url, function(data, status) {
+                // We need this to keep the list of nodes and edges
+                var edges = [];
+                var nodes = [];
+                var latest_date;
+                var vis_nodes;
+                var vis_edges;
+
+                redrawAll(data['nodes'], data['edges']);
+
+                function redrawAll(nodes, edges) {
+                    console.log("Nodes = " + nodes.length);
+                    console.log("Edges = " + edges.length);
+                    vis_nodes = new vis.DataSet(nodes);
+                    vis_edges = new vis.DataSet(edges);
+                    var container = document.getElementById('ipvis');
+                    var options = {
+                        autoResize: true,
+                        width: '100%',
+                        height: '100%',
+                        interaction: {
+                            navigationButtons: true,
+                            keyboard: true
+                        },
+                        layout: {
+                            randomSeed: 8,
+                            improvedLayout: false
+                        },
+                        nodes: {
+                            shape: 'dot',
+                            scaling: {
+                                min: 10,
+                                max: 40
+                            },
+                            physics: true,
+                            borderWidth: 1,
+                            font: {
+                                color: 'white',
+                                size: 10
+                            }
+                        },
+                        edges: {
+                            smooth: false,
+                            scaling: {
+                                min: 2,
+                                max: 30
+                            }
+                        },
+                        groups: {
+                            AU: {
+                                color: {
+                                    background: 'rgba(255,255,0,0.8)',
+                                    border: 'white',
+                                    highlight: {
+                                        background: 'rgba(255,255,0,1.0)',
+                                        border: 'white'
+                                    }
+                                }
+                            },
+                            NZ: {
+                                color: {
+                                    background: 'rgba(0,0,0,0.8)',
+                                    border: 'lightgrey',
+                                    highlight: {
+                                        background: 'rgba(0,0,0,1.0)',
+                                        border: 'lightgrey'
+                                    }
+                                }
+                            },
+                            IX: {
+                                color: {
+                                    background: 'rgba(255,0,64,0.8)',
+                                    border: 'pink',
+                                    highlight: {
+                                        background: 'rgba(255,0,64,1.0)',
+                                        border: 'pink'
+                                    }
+                                }
+                            },
+                            priv: {
+                                color: {
+                                    background: 'rgba(150,0,150,0.8)',
+                                    border: 'purple',
+                                    highlight: {
+                                        background: 'rgba(150,0,150,1.0)',
+                                        border: 'purple'
+                                    }
+                                }
+                            },
+                            other: {
+                                color: {
+                                    background: 'rgba(8,138,8,0.8)',
+                                    border: 'limegreen',
+                                    highlight: {
+                                        background: 'rgba(8,138,8,1.0)',
+                                        border: 'limegreen'
+                                    }
+                                }
+                            },
+                            tier1: {
+                                color: {
+                                    background: 'rgba(0,0,200,0.8)',
+                                    border: 'lightblue',
+                                    highlight: {
+                                        background: 'rgba(0,0,200,1.0)',
+                                        border: 'lightblue'
+                                    }
+                                }
+                            }
+                        },
+                        interaction: {
+                            navigationButtons: true,
+                            zoomView: true
+                        },
+                        "physics": {
+                            "barnesHut": {
+                              "gravitationalConstant": -36000,
+                              "centralGravity": 2.6,
+                              "springLength": 245,
+                              "springConstant": 0.065,
+                              "avoidOverlap": 0.9
+                            },
+                            "maxVelocity": 90,
+                            "minVelocity": 4,
+                            "timestep": 0.14
+                        },
+                        configure: {
+                          filter:function (option, path) {
+                             if (path.indexOf('physics') !== -1) {
+                                return true;
+                             }
+                             if (path.indexOf('smooth') !== -1 || option === 'smooth') {
+                               return true;
+                             }
+                             return false;
+                           },
+                           container: document.getElementById('config')
+                       }
+                    };
+
+                    var data = {nodes:vis_nodes, edges: vis_edges}
+                    network = new vis.Network(container, data, options);
+                    allNodes = vis_nodes.get({returnType: 'Object'});
+                    allEdges = vis_edges.get({returnType: 'Object'});
+                    // Do this to save the location of nodes in the network once the
+                    // physics simulation finishes
+                    network.on('stabilized', function() {
+                        console.log('Stabilization complete');
+                        network.storePositions();
+                        var node_pos = {};
+                        $.each(vis_nodes.get(), function() {
+                            node_pos[this.id + ".x"] = this.x;
+                            node_pos[this.id + ".y"] = this.y;
+                        });
+                        $.ajax({
+                            url: "http://localhost:8080/savepos",
+                            type: "POST",
+                            data: node_pos,
+                            contentType: 'application/json; charset=utf-8',
+                            dataType: "json",
+                            success: function() {}
+                        });
+                        // Create a tag to be detected by automated testing
+                        if ($("#stabilized").length == 0) {
+                            $("body").append("<div id='stabilized'></div>");
+                        }
+                    });
+                    network.on('click', neighbourHighlight);
+                }
+
+                function neighbourHighlight(params) {
+                    // Click on an edge
+                    if (params.nodes.length == 0 && params.edges.length > 0) {
+                        var selectedEdge = allEdges[params.edges[0]];
+                        var info_window = document.getElementById('info_window');
+                        hl_edge = true;
+                        info_window.innerHTML = "<b>Edge info</b><br/>" +
+                            "<b>Peer 1:<b/> " + selectedEdge['from'] + "<br/>" +
+                            "<b>Peer 2:<b/> " + selectedEdge['to'] + "<br/>" +
+                            "<b>AS Relationship:<b/> " + selectedEdge['class'] + "<br/>" +
+                            "<b>Weight (number of IPv4 /24 prefixes):</b> " +
+                            selectedEdge['value'] +
+                        "<br/>";
+                    }
+                    // Click on a node
+                    else if (params.nodes.length > 0) {
+                      highlightActive = true;
+                      var i,j;
+                      var selectedNode = params.nodes[0];
+                      var degrees = 1;
+
+                      // mark all nodes as hard to read.
+                      for (var nodeId in allNodes) {
+                        allNodes[nodeId].color = 'rgba(100,100,100,0.5)';
+                        if (allNodes[nodeId].hiddenLabel === undefined) {
+                          allNodes[nodeId].hiddenLabel = allNodes[nodeId].label;
+                          allNodes[nodeId].label = undefined;
+                        }
+                      }
+
+                      var connectedNodes = network.getConnectedNodes(selectedNode);
+                      var allConnectedNodes = [];
+
+                      // get all connected nodes to a degree
+                      for (i = 1; i < degrees; i++) {
+                        for (j = 0; j < connectedNodes.length; j++) {
+                          allConnectedNodes = allConnectedNodes.concat(network.getConnectedNodes(connectedNodes[j]));
+                        }
+                      }
+
+                      // all first degree nodes get their own color and their label back
+                      for (i = 0; i < connectedNodes.length; i++) {
+                        allNodes[connectedNodes[i]].color = undefined;
+                        if (allNodes[connectedNodes[i]].hiddenLabel !== undefined) {
+                          allNodes[connectedNodes[i]].label = allNodes[connectedNodes[i]].hiddenLabel;
+                          allNodes[connectedNodes[i]].hiddenLabel = undefined;
+                        }
+                      }
+
+                      // the main node gets its own color and its label back.
+                      allNodes[selectedNode].color = undefined;
+                      if (allNodes[selectedNode].hiddenLabel !== undefined) {
+                        allNodes[selectedNode].label = allNodes[selectedNode].hiddenLabel;
+                        allNodes[selectedNode].hiddenLabel = undefined;
+                      }
+
+                      // Provide some information about the node
+                      var thisNode = allNodes[selectedNode];
+                      document.getElementById('info_window').innerHTML = "<b>Node info:<b/><br/>" +
+                            "<b>Short Name:</b> " + thisNode.label + "<br/>" +
+                            "<b>Full Name:</b> " + thisNode.description + "<br/>" +
+                            "<b>Number of Peers:</b> " + thisNode.value + "<br/>" +
+                            "<b>Group:</b> " + thisNode.group + "<br/>" +
+                            "<b>Country:</b> " + thisNode.country;
+
+                    }
+                    else if (highlightActive === true) {
+                      // reset all nodes
+                      for (var nodeId in allNodes) {
+                        allNodes[nodeId].color = undefined;
+                        if (allNodes[nodeId].hiddenLabel !== undefined) {
+                          allNodes[nodeId].label = allNodes[nodeId].hiddenLabel;
+                          allNodes[nodeId].hiddenLabel = undefined;
+                        }
+                      }
+                      highlightActive = false
+                    }
+                    else if (hl_edge === true) {
+                        document.getElementById('info_window').innerHTML = '';
+                    }
+
+                    // transform the object into an array
+                    var updateArray = [];
+                    for (nodeId in allNodes) {
+                      if (allNodes.hasOwnProperty(nodeId)) {
+                        updateArray.push(allNodes[nodeId]);
+                      }
+                    }
+                    vis_nodes.update(updateArray);
+                }
+        });
+    </script>
+</body>
+</html>
