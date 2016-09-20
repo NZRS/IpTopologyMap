@@ -97,10 +97,10 @@ def schedule_measurement(dest, probes):
         conn.close()
         # This sleep is important to give time to the scheduled measurements to complete before trying more.
         time.sleep(3)
-    except urllib2.HTTPError as e:
+    except (urllib2.HTTPError, urllib2.URLError) as e:
         # Other kind of error
         msm_status['failed'].append(dest)
-        print "Fatal Error: {}".format(e.read())
+        print "Fatal Error: %s " % e
         print req_data
 
     return msm_status
