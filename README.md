@@ -8,7 +8,13 @@ and a variety of data sources.
 
 ## Requirements
 
-Listed in the requirements.txt file
+Listed in the requirements.txt file. You will also need to install:
+
+CAIDA BGPstream
+https://bgpstream.caida.org
+
+MaxMind GeoIP
+https://www.maxmind.com/en/geoip2-services-and-databases
 
 ## Methodology
 
