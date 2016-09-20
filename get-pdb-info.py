@@ -6,7 +6,7 @@ import argparse
 import os
 import requests
 import json
-import progressbar
+from progressbar import ProgressBar
 
 """Start query is to get the full list of IXs"""
 pdb_url = "https://www.peeringdb.com/api/ix"
@@ -23,7 +23,7 @@ ix_info = []
 ix_cnt = 0
 ix_missing = []
 
-pbar = progressbar.ProgressBar(max_value=len(ix_resp['data']))
+pbar = ProgressBar(max_value=len(ix_resp['data']))
 
 for ix in ix_resp['data']:
     # if ix['id'] > 10:
@@ -48,7 +48,7 @@ for ix in ix_resp['data']:
                             'name': ix['name'],
                             'name_long': ix['name_long'],
                             'country': ix['country'],
-                            'rs_asn': 395165+ix['id'],
+                            'rs_asn': str(395165+ix['id']),
                             'ixpfx': [p['prefix'] for p in ixpfx_info['data']]})
         else:
             ix_missing.append(ix)
