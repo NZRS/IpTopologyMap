@@ -16,6 +16,9 @@ https://bgpstream.caida.org
 MaxMind GeoIP
 https://www.maxmind.com/en/geoip2-services-and-databases
 
+AS Relationship Wrapper
+https://github.com/NZRS/AS_Relationship_Wrapper
+
 ## Methodology
 
 Using all the active RIPE Atlas probes in a given country, it will use three 
