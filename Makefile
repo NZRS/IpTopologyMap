@@ -101,8 +101,8 @@ deploy-test: ${DATADIR}/ip-network-graph.js html/ip-test.html
 	rsync -a html/ip-test.html /var/www/visjs
 
 deploy-vis-bgp: ${DATADIR}/full-network.json html/vis-bgp-test.html
-	mkdir -p /var/www/visjs/misc/data
-	rsync -a ${DATADIR}/full-network.json /var/www/visjs/misc/data
+	mkdir -p /var/www/visjs/data
+	rsync -a ${DATADIR}/full-network.json /var/www/visjs/data
 	rsync -a html/vis-bgp-test.html /var/www/visjs
 
 deploy-prod-vis-bgp: ${DATADIR}/full-network.json html/vis-bgp-test.html
