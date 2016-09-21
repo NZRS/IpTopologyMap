@@ -73,6 +73,7 @@
             <li>Blue: <span id="PriCountry"></span></li>
             <li>Yellow: <span id="SecCountry"></span></li>
             <li>Red: IXs</li>
+            <li>Orange: Tier1 AS (according to CAIDA)</li>
             <li>Green: Other Countries ASNs</li>
             </ul>
         </p>
@@ -131,9 +132,6 @@
                     autoResize: true,
                     width: '100%',
                     height: '100%',
-                    interaction: {
-
-                    },
                     layout: {
                         randomSeed: 8
                     },
@@ -197,13 +195,24 @@
                                     border: 'limegreen'
                                 }
                             }
+                        },
+                        tier1: {
+                            color: {
+                                background: 'rgba(255,127,80,0.8)',
+                                border: 'orange',
+                                highlight: {
+                                    background: 'rgba(255,127,80,1.0)',
+                                    border: 'orange'
+                                }
+                            }
                         }
                     },
                     interaction: {
                         navigationButtons: true,
                         zoomView: true,
                         dragNodes: false,
-                        hideEdgesOnDrag: true
+                        hideEdgesOnDrag: true,
+                        keyboard: true
                     }
                 };
 
@@ -288,6 +297,7 @@
                   var thisNode = allNodes[selectedNode];
                   document.getElementById('info_window').innerHTML = "<b>Node info:<b/><br/>" +
                         "<b>Name:</b> " + thisNode.label + "<br/>" +
+                        "<b>Long Name:</b> " + thisNode.descr + "<br/>" +
                         "<b>ASN:</b> " + thisNode.asn + "<br/>" +
                         "<b># Peers:</b> " + thisNode.value + "<br/>" +
                         "<b>Country:</b> " + thisNode.country;

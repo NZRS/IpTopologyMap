@@ -50,34 +50,36 @@ def org_from_addr(a):
     :param a: string
     :return: string
     """
-    org = g.org_by_name(a)
-    if org is not None:
-        return org.split(' ')[0][2:]
+
+    # First, we try this source which is a list of curated networks plus
+    # information from PeeringDB. We want to identify IXs first
+    entry = rt.search_best(network=a, masklen=32)
+    if entry is not None:
+        try:
+            # We know something about this AS, save the information for
+            # later use
+            ne = net_idx[entry.prefix]
+            known_as[ne['ASN']] = {'country': ne['country'],
+                                   'short_descr': ne['name'],
+                                   'long_descr': ne['long_name'],
+                                   'complete': ne['complete']}
+            return ne['ASN']
+        except KeyError as e:
+            print("ERROR: Matching prefix %s for address %s is "
+                  "inconsistent: %s (%s)" % (entry.prefix, a, e,
+                                             ne['source']))
     else:
-        # Look the remapped addresses
+        # Second, we try the list of mapped addresses, which come from RIPE
         if a in remapped_addr:
             return remapped_addr[a]
         else:
-            # Last attempt to look into the list of networks we know
-            entry = rt.search_best(network=a, masklen=32)
-            if entry is not None:
-                try:
-                    # We know something about this AS, save the information for
-                    # later use
-                    ne = net_idx[entry.prefix]
-                    known_as[ne['ASN']] = {'country': ne['country'],
-                                                  'short_descr': ne['name'],
-                                                  'long_descr': ne['long_name'],
-                                                  'complete': ne['complete']}
-                    return ne['ASN']
-                except KeyError as e:
-                    print("ERROR: Matching prefix %s for address %s is "
-                          "inconsistent: %s (%s)" % (entry.prefix, a, e,
-                                                     ne['source']))
-                    return "UNK"
+            # Third, we use GeoIP
+            org = g.org_by_name(a)
+            if org is not None:
+                return org.split(' ')[0][2:]
 
-        # Last resort
-        return "UNK"
+    # Last resort
+    return "UNK"
 
 
 def class_from_name(node):

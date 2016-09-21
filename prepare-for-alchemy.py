@@ -1,12 +1,12 @@
 import json
 import igraph
-import networkx as nx
 from collections import defaultdict
 from networkx.readwrite import json_graph
 from time import strftime, localtime
 from asn_name_lookup import AsnNameLookupService
 import argparse
-from as_relationship import AsRelationshipService
+import as_relationship.parser as asrp
+import as_relationship.fetcher as asrf
 import os
 import pycountry
 
@@ -14,7 +14,6 @@ __author__ = 'secastro'
 
 parser = argparse.ArgumentParser("Prepare graph file for visualization")
 parser.add_argument('--datadir', required=True, help="directory to read input and save output")
-parser.add_argument('--relfile', required=True, help="File with AS relationship data")
 args = parser.parse_args()
 
 """Load the configuration file with the list of countries we are interested"""
@@ -25,7 +24,6 @@ countries = set(config['PrimaryCountry'] + config['SecondaryCountry'] + ['IX'])
 
 with open("{}/bgp.json".format(args.datadir), 'rb') as bgp_file:
     map_data = json.load(bgp_file)
-    # bgp_map = nx.Graph(map_data)
     bgp_map = json_graph.node_link_graph(map_data)
 
 # Annotate the bgp_map metadata with the names of the countries
@@ -60,9 +58,15 @@ print("INFO: AS info to lookup: %s" % ases_to_look)
 as_lookup_info = s.lookup_many(ases_to_look)
 
 as_info.update(as_lookup_info)
+
 # Save the collected AS info if needed for inspecting
 with open(os.path.join(args.datadir, 'as-info.json'), 'wb') as as_file:
     json.dump(as_info, as_file, indent=2, sort_keys=True)
+
+# AS Relationship data from CAIDA
+as_rel_file = asrf.get_as_relationship_file(datadir=args.datadir)
+as_rel = asrp.AsRelationship(as_rel_file)
+tier1 = as_rel.tier1_asn()
 
 degree_set = defaultdict(set)
 # Go over the list of nodes and add the degree attribute
@@ -79,8 +83,12 @@ for node_deg in bgp_map.degree_iter():
         bgp_map.node[asn]['ASN'] = asn_str
         # Add a group based on the country for all nodes
         bgp_map.node[asn]['country'] = as_info[asn_str]['country']
-        bgp_map.node[asn]['group'] = as_info[asn_str]['country'] if \
-            as_info[asn_str]['country'] in countries else 'other'
+        if asn_str in tier1:
+            print "Found a Tier1 %s" % asn_str
+            bgp_map.node[asn]['group'] = 'tier1'
+        else:
+            bgp_map.node[asn]['group'] = as_info[asn_str]['country'] if \
+                as_info[asn_str]['country'] in countries else 'other'
     else:
         if asn_str not in as_info:
             print("** Couldn't lookup %s" % asn_str)
@@ -108,12 +116,11 @@ for node in json_dump['nodes']:
     n_idx[node['id']] = VG.vcount()
     VG.add_vertex({'name': node['id'], 'label': node['id']})
 
-s = AsRelationshipService([args.relfile])
 for link in json_dump['links']:
     link['_weight'] = 1
     link['source'] = json_dump['nodes'][link['source']]['id']
     link['target'] = json_dump['nodes'][link['target']]['id']
-    link['_class'] = s.rel_char2class(s.find_rel(link['source'], link['target']))
+    link['_class'] = as_rel.rel2class(link['source'], link['target'])
     VG.add_edge(n_idx[link['source']], n_idx[link['target']])
 
 layout = VG.layout("large")
@@ -150,6 +157,7 @@ with open(os.path.join(args.datadir, 'vis-bgp-graph.js'), 'wb') as vis_file:
     bgp_nodes = {}
     for n in json_dump['nodes']:
         bgp_nodes[n['id']] = {'label': n['name'],
+                              'descr': n['descr'],
                               'group': n['group'],
                               'ASN': n['ASN'],
                               'country': n['country'],
@@ -171,6 +179,7 @@ with open(os.path.join(args.datadir, 'vis-bgp-graph.js'), 'wb') as vis_file:
 
     nodes_export = [{'id': node_idx[n],
                      'label': v['label'],
+                     'descr': v['descr'],
                      'group': v['group'],
                      'country': v['country'],
                      'ASN': v['ASN'],

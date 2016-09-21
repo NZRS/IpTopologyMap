@@ -1,4 +1,3 @@
-REL_DAY=20150201
 DATADIR ?= data
 PRIM_COUNTRIES ?= NZ
 SEC_COUNTRIES ?= AU
@@ -13,10 +12,6 @@ all: ${DATADIR}/bgp.alchemy.json
 analytics: ${DATADIR}/expanded-ip-path.json
 
 retry: ${DATADIR}/retry.json
-
-data/$(REL_DAY).as-rel.txt:
-	wget -O - http://data.caida.org/datasets/as-relationships/serial-1/$(REL_DAY).as-rel.txt.bz2 | bzip2 -cd > $@_
-	mv $@_ $@
 
 data/known-networks.json: create-known-networks.py
 	python2 create-known-networks.py
@@ -77,7 +72,7 @@ ${DATADIR}/bgp.json ${DATADIR}/ip.json ${DATADIR}/ip-path.json: ${DATADIR}/resul
 	python2 analyze-results.py --datadir ${DATADIR} --sample 100
 
 ${DATADIR}/vis-bgp-graph.json ${DATADIR}/vis-bgp-graph.js: prepare-for-alchemy.py ${DATADIR}/bgp.json
-	python2 prepare-for-alchemy.py --datadir ${DATADIR} --relfile data/$(REL_DAY).as-rel.txt
+	python2 prepare-for-alchemy.py --datadir ${DATADIR}
 
 ${DATADIR}/node-position.json: run-physics-simulation.py ${DATADIR}/vis-bgp-graph.json
 	python2 run-physics-simulation.py --datadir ${DATADIR}
