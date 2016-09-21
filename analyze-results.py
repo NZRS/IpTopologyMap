@@ -12,11 +12,11 @@ import re
 import GeoIP
 import itertools
 from networkx.readwrite import json_graph
-from reverse_lookup import ReverseLookupService
 import random
 import os
 import datetime
 from radix import Radix
+import math
 
 
 probe_addr = dict()
@@ -203,6 +203,8 @@ edges = []
 node_hops = defaultdict(set)
 unknown_addr = set()
 address_to_lookup = set()
+dest_responded = defaultdict(int)
+hop_len = []
 
 for cc, res_set in res_blob.iteritems():
     for res in res_set:
@@ -214,6 +216,8 @@ for cc, res_set in res_blob.iteritems():
             print("Destination = %s" % sagan_res.destination_address)
             print("Hops = %s" % sagan_res.total_hops)
             print("Destination responded = %s" % sagan_res.destination_ip_responded)
+        dest_responded[sagan_res.destination_ip_responded] += 1
+        hop_len.append(sagan_res.total_hops)
         address_to_lookup.add(sagan_res.origin)
         addr_list.add(sagan_res.source_address)
         last_hop_detected = False
@@ -381,6 +385,20 @@ with open(dpath("ip.json"), 'wb') as ip_json_file:
 # before dumping it
 for s, t, d in bgp.edges_iter(data=True):
     bgp[s][t]['pairs'] = [p for p in d['pairs']]
+
+# Calculate the average and std of the IP path length
+hop_len_avg = 0.0
+hop_len_std = 0.0
+if len(hop_len) > 0:
+    hop_len_avg = sum(hop_len) / len(hop_len)
+    hop_len_std = math.sqrt(sum([(x-hop_len_avg) ** 2 for x in hop_len]) / len(
+        hop_len))
+
+bgp.graph['metadata']['hop_len_avg'] = hop_len_avg
+bgp.graph['metadata']['hop_len_std'] = hop_len_std
+
+# Distribution of destinations that responded
+bgp.graph['metadata']['responded'] = dest_responded
 
 # Add the date of generation to the metadata in the BGP view
 bgp.graph['metadata']['updated'] = str(datetime.date.today())
