@@ -7,52 +7,71 @@
     html, body {
         width: 100%;
         height: 100%;
+		background-color: #000;
     }
     #ipvis {
-      height: 85%;
-      width: 100%;
-      background: black;
-        margin-left: 20%;
+	height: 100%;
+	width: 78%;
+	background: black;
+	margin-left: 22%;
     }
     #legend {
-      float: left;
-      width: 20%;
-        min-height: 85%;
-        position: relative;
-      background: black;
-      color: white;
-      font-size: 8;
-      font-family: 'Source Sans Pro', Helvetica, sans-serif;
+	width: 20%;
+	min-height: 85%;
+	background: #000;
+	color: white;
+	padding-left: 1%;
+	padding-left: 2%;
+	font-size: 13px;
+	font-family: Segoe, "Segoe UI", "DejaVu Sans", "Trebuchet MS", Verdana, sans-serif;
+	float: left;
+	clear: none;
+	text-align: left;
     }
     #console {
-        float: left;
-        background: black;
-        color: white;
-        font-size: 8;
-        min-height: 15%;
-        width: 100%;
+	float: left;
+	background: black;
+	color: white;
+	font-size: 8;
+	min-height: 15%;
+	width: 100%;
+	font-family: Segoe, "Segoe UI", "DejaVu Sans", "Trebuchet MS", Verdana, sans-serif;
+	clear: none;
     }
     #brand-title {
-        font-weight: 200;
-        font-size: 20px;
-        text-align: left;
-        font-family: 'Source Sans Pro', Helvetica, sans-serif;
+	width: 100%;
+	border-bottom: 1px solid #3bb3e9;
+	margin-right: 3%;
+	font-weight: 600;
+	font-size: 18px;
+	text-align: center;
+	font-family: Segoe, "Segoe UI", "DejaVu Sans", "Trebuchet MS", Verdana, sans-serif;
+	float: left;
+	clear: none;
+	margin-bottom: 6%;
+	padding-bottom: 14px;
     }
-    #metadata {
-        position: absolute;
-        left: 0;
-        bottom: 10px;
+	a {color:#3bb3e9;}
+	h3 {
+	    color: #3bb3e9;
+	    font-size:19px;
+	    border-bottom: 1px solid #3bb3e9;
+	    margin-right: 3%;
+	    margin-bottom: 10px;
+    }
+	li:before {
+	    padding-right: 3px;
     }
     </style>
 </head>
 <body>
     <div id="legend">
+        <div style="text-align:center;"><img
+                src="/images/NZRS_Logo_white.png" height="100" alt=""/></div>
         <span id="brand-title"><span class="country"></span> IP Topology
             Map</span>
-        <image height="80px" src="/images/NZRS_Logo_white.png"/>
-        <p>
-        <ul>
-            <li>Topology derived from hundreds of ICMP traceroutes,
+      
+<p>  <li>Topology derived from hundreds of ICMP traceroutes,
                 originated from the <a href="https://atlas.ripe.net">RIPE
                     ATLAS</a> probes located in <span class="country"></span>
                 <ul>
@@ -62,25 +81,28 @@
                         class="country"></span> visible address space</li>
                     <li>To the Top 100 popular websites in <span
                             class="country"></span> according to Alexa</li>
-                </ul>
+                </li></ul>
             <li>IP addresses mapped to ASN using MaxMind GeoIP database. AS Path derived from IP Path using custom code.</li>
             <li>Country and names for each AS fetched from Team Cymru <a href="http://www.team-cymru.org/IP-ASN-mapping.html">database</a></li>
-        </ul>
+        </li>
         </p>
         <p>
-            <h3>Legend</h3>
-            <ul>
+      <h3>Legend</h3>
+      
             <li>Blue: <span id="PriCountry"></span></li>
             <li>Yellow: <span id="SecCountry"></span></li>
             <li>Red: IXs</li>
             <li>Orange: Tier1 AS (according to CAIDA)</li>
             <li>Green: Other Countries ASNs</li>
-            </ul>
+
         </p>
-        <span id="metadata"></span>
+
+        <div id="metadata"><h3>Metadata</h3>
+            <span id="metadata_text"></span></div>
+        <div id="console"><h3>Information</h3><span id="info_window"/></div>
     </div>
     <div id="ipvis"></div>
-    <div id="console">Information:<br/><span id="info_window"/></div>
+   
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/vis/4.16.1/vis.min.js"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/vis/4.16.1/vis.min.css" rel="stylesheet" type="text/css" />
@@ -226,7 +248,7 @@
                 network.on('click', neighbourHighlight);
 
                 // Display the metadata
-                document.getElementById('metadata').innerHTML = "Updated on: " +
+                document.getElementById('metadata_text').innerHTML = "Updated on: " +
                 metadata['updated'] + "<br/>" +
                 "Number of traceroutes: " + metadata['tracert_num'] + "<br/>" +
                 "Number of probes: " + metadata['probes_num'] + "<br/>" +
@@ -295,8 +317,7 @@
 
                   // Provide some information about the node
                   var thisNode = allNodes[selectedNode];
-                  document.getElementById('info_window').innerHTML = "<b>Node info:<b/><br/>" +
-                        "<b>Name:</b> " + thisNode.label + "<br/>" +
+                  document.getElementById('info_window').innerHTML = "<b>Name:</b> " + thisNode.label + "<br/>" +
                         "<b>Long Name:</b> " + thisNode.descr + "<br/>" +
                         "<b>ASN:</b> " + thisNode.asn + "<br/>" +
                         "<b># Peers:</b> " + thisNode.value + "<br/>" +
