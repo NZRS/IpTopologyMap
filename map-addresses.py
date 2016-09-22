@@ -1,3 +1,5 @@
+#!/usr/bin/env python2
+
 import GeoIP
 import requests
 from multiprocessing import Pool
@@ -41,26 +43,29 @@ def log_result(result):
     results.append(result)
     pbar.update(len(results))
 
-addr = []
-with open(os.path.join(args.datadir, 'unmappable-addresses.txt')) as f:
-    addr = [a.rstrip("\n") for a in f.readlines()]
-
-remap_file = os.path.join(args.datadir, 'remapped-addresses.json')
 existing = {}
-if os.path.exists(remap_file):
-    with open(remap_file) as f:
-        existing = json.load(f)
+unmap_file = os.path.join(args.datadir, 'unmappable-addresses.txt')
+remap_file = os.path.join(args.datadir, 'remapped-addresses.json')
+if os.path.exists(unmap_file):
+    addr = []
+    with open(unmap_file) as f:
+        addr = [a.rstrip("\n") for a in f.readlines()]
 
-pool = Pool()
-pbar.maxval = len(addr)
-pbar.start()
-for a in addr:
-    pool.apply_async(map_addr, args=(a, ), callback=log_result)
+    if os.path.exists(remap_file):
+        with open(remap_file) as f:
+            existing = json.load(f)
 
-pool.close()
-pool.join()
-pbar.finish()
+    pool = Pool()
+    pbar.start(max_value=len(addr))
+    for a in addr:
+        pool.apply_async(map_addr, args=(a, ), callback=log_result)
 
-with open(remap_file, 'wb') as f:
+    pool.close()
+    pool.join()
+    pbar.finish()
+
     existing.update(dict((k, v) for (k, v) in results if v is not None))
+
+# This will write the resulting file
+with open(remap_file, 'wb') as f:
     json.dump(existing, f)
