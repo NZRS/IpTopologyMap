@@ -60,20 +60,20 @@ def probe_ids(probe_set, myid):
     return [str(id) for id in probe_set-{myid}]
 
 
-def schedule_measurement(dest, probes):
+def schedule_measurement(dest, probes, tag, stage):
     msm_status = defaultdict(list)
 
     data = {"definitions": [
         {
             "target": dest,
-            "description": "Traceroute to {}".format(dest),
+            "description": "%s_%s: Traceroute to %s" % (tag, stage, dest),
             "type": "traceroute",
             "protocol": "ICMP",
             "paris": 16,
             "af": 4,
             "is_oneoff": True,
             "can_visualize": False,
-            "is_public": False
+            "is_public": True
         }],
         "probes": [{"requested": len(probes), "type": "probes", "value": ",".join(probes)}]
         }
@@ -123,6 +123,8 @@ def merge_msm(x, y):
 
 parser = argparse.ArgumentParser("Creates probe to probe traceroutes")
 parser.add_argument('--datadir', required=True, help="directory to save output")
+parser.add_argument('--tag', required=True,
+                    help="Unique TAG for this experiment")
 parser.add_argument('--stage', required=False,
                     help="Stage of measurement to execute (1, 2, 3, all)")
 parser.add_argument('--sample', required=False, default=0.2,
@@ -173,7 +175,9 @@ for cc, probe_list in cc_probe_list.iteritems():
                 msm_cnt += 1
             else:
                 status = schedule_measurement(probe['address_v4'],
-                                              probe_ids(probe_id_set, probe['id']))
+                                              probe_ids(probe_id_set,
+                                                        probe['id']),
+                                              args.tag, 'S1')
                 msm_list[cc] = msm_list[cc] + status['list']
                 failed_msm[cc] = failed_msm[cc] + status['failed']
 
@@ -185,7 +189,8 @@ for cc, probe_list in cc_probe_list.iteritems():
             if args.dry_run:
                 msm_cnt += 1
             else:
-                status = schedule_measurement(addr, probe_id_list)
+                status = schedule_measurement(addr, probe_id_list, args.tag,
+                                              'S2')
                 msm_list[cc] = msm_list[cc] + status['list']
                 failed_msm[cc] = failed_msm[cc] + status['failed']
 
@@ -198,7 +203,8 @@ for cc, probe_list in cc_probe_list.iteritems():
                 if args.dry_run:
                     msm_cnt += 1
                 else:
-                    status = schedule_measurement(site, probe_id_list)
+                    status = schedule_measurement(site, probe_id_list,
+                                                  args.tag, 'S3')
                     msm_list[cc] = msm_list[cc] + status['list']
                     failed_msm[cc] = failed_msm[cc] + status['failed']
 
@@ -209,7 +215,8 @@ for cc, probe_list in cc_probe_list.iteritems():
 
             # Generate a set, to avoid duplicating destinations
             for prev_attempt in set(prev_failed[cc]):
-                status = schedule_measurement(prev_attempt, probe_id_list)
+                status = schedule_measurement(prev_attempt, probe_id_list,
+                                              args.tag, 'Retry')
                 msm_list[cc] = msm_list[cc] + status['list']
                 failed_msm[cc] = failed_msm[cc] + status['failed']
 

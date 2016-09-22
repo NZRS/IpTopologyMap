@@ -1,12 +1,13 @@
-DATADIR ?= data
 PRIM_COUNTRIES ?= NZ
 SEC_COUNTRIES ?= AU
-TRACE_SAMPLE_RATE ?= 0.5
+TAG ?= ${PRIM_COUNTRIES}_$(shell date +%Y%m%d)
+DATADIR ?= data/${TAG}
+TRACE_SAMPLE_RATE ?= 0.7
 SCANDIR=${DATADIR}/scans
 PROD_DIR=/usr/share/nginx/ip-map/
 PROD_VIS_DIR=/usr/share/nginx/ip-map/
 SELECTED_TOPOLOGY_DATA=data/country-aspath-selection.json
-DEST_DIR?=ES-20160914
+DEST_DIR?=${TAG}
 PROD_DEST_DIR=${PROD_VIS_DIR}/${DEST_DIR}
 
 all: ${DATADIR}/bgp.alchemy.json
@@ -55,7 +56,7 @@ ${DATADIR}/retry.json: ${DATADIR}/failed-msm.json
 	./probe-to-probe-traceroute.py --datadir ${DATADIR} --retry
 
 ${DATADIR}/measurements.json: ${DATADIR}/probes.json ${DATADIR}/dest-addr.json ${DATADIR}/known-sites.json
-	./probe-to-probe-traceroute.py --datadir ${DATADIR} --sample ${TRACE_SAMPLE_RATE}
+	./probe-to-probe-traceroute.py --datadir ${DATADIR} --tag ${TAG} --sample ${TRACE_SAMPLE_RATE}
 
 ${DATADIR}/results.json: ${DATADIR}/measurements.json
 	python2 fetch-results.py --datadir ${DATADIR}
