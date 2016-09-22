@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/env python2
 
 __author__ = 'secastro'
 
@@ -25,7 +25,7 @@ parser.add_argument('--datadir', required=True, help="directory to save output")
 args = parser.parse_args()
 
 req = requests.get(start_url)
-html = bs4.BeautifulSoup(req.text)
+html = bs4.BeautifulSoup(req.text, "html.parser")
 chunk_sz = 64*1024
 
 sources = {}
