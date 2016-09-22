@@ -1,6 +1,4 @@
-#!/usr/bin/python
-
-__author__ = 'secastro'
+#!/usr/bin/env python2
 
 import json
 import argparse
@@ -9,15 +7,18 @@ import random
 import time
 import sys
 import os
-import os.path
 from collections import defaultdict
+from ripe.atlas.cousteau import (Traceroute, AtlasSource, AtlasCreateRequest)
+from datetime import datetime
+
+__author__ = 'secastro'
 
 
-def valid_fraction(s):
-    if 0.0 <= float(s) <= 1.0:
-        return float(s)
+def valid_fraction(fraction):
+    if 0.0 <= float(fraction) <= 1.0:
+        return float(fraction)
     else:
-        raise argparse.ArgumentTypeError("%r is out of bounds [0.0, 1.0]" % s)
+        raise argparse.ArgumentTypeError("%r is out of bounds [0.0, 1.0]" % fraction)
 
 
 def load_existing(source_dir, filename):
@@ -63,45 +64,44 @@ def probe_ids(probe_set, myid):
 def schedule_measurement(dest, probes, tag, stage):
     msm_status = defaultdict(list)
 
-    data = {"definitions": [
-        {
-            "target": dest,
-            "description": "%s_%s: Traceroute to %s" % (tag, stage, dest),
-            "type": "traceroute",
-            "protocol": "ICMP",
-            "paris": 16,
-            "af": 4,
-            "is_oneoff": True,
-            "can_visualize": False,
-            "is_public": True
-        }],
-        "probes": [{"requested": len(probes), "type": "probes", "value": ",".join(probes)}]
-        }
+    traceroute = Traceroute(
+        af=4,
+        target=dest,
+        description="%s_%s: Traceroute to %s" % (tag, stage, dest),
+        protocol="ICMP",
+        is_public=True,
+        paris=16,
+        can_visualize=False,
+    )
+    trace_origin = AtlasSource(
+        requested=len(probes),
+        type="probes",
+        value=",".join(probes)
+    )
 
     try:
-        req_data = json.dumps(data)
-        request = urllib2.Request(base_url)
-        request.add_header("Content-Type", "application/json")
-        request.add_header("Accept", "application/json")
-        conn = urllib2.urlopen(request, req_data)
-        results = json.load(conn)
-        print results
-        print req_data
+        atlas_req = AtlasCreateRequest(
+            start_time=datetime.utcnow(),
+            key=authkey,
+            measurements=[traceroute],
+            sources=[trace_origin],
+            is_oneoff=True
+        )
+        (is_success, response) = atlas_req.create()
         # Check if we got a positive result
-        if 'measurements' in results:
-            for m in results['measurements']:
+        if is_success:
+            print response
+            for m in response['measurements']:
                 msm_status['list'].append(m)
-        # Check if we got an error, save the request for later
-        if 'error' in results:
+        else:
             msm_status['failed'].append(dest)
-        conn.close()
+
         # This sleep is important to give time to the scheduled measurements to complete before trying more.
         time.sleep(3)
     except (urllib2.HTTPError, urllib2.URLError) as e:
         # Other kind of error
         msm_status['failed'].append(dest)
         print "Fatal Error: %s " % e
-        print req_data
 
     return msm_status
 
