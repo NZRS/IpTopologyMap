@@ -16,9 +16,11 @@ mystery_cc = '!' # cc which could not be geolocated
 OUTPUT_DIR = "analytics"
 PATHS = None
 
+
 def path2string(p):
     return "\n".join(["{0:>6} {1:>10} {2:15} {3:.2f}".format(e.get('country', '++'), e['asn'], e['addr'], e['rtt']) for e in p])
     # return "\n".join(["{country:>6} {asn:>10} {addr}".format(e) for e in p])
+
 
 def geolocation_anomalies():
     '''
@@ -42,6 +44,7 @@ def geolocation_anomalies():
     global OUTPUT_DIR
     with open(OUTPUT_DIR + "/potential-anomalies.json", "wb") as f:
         json.dump(potential_anomalies, f, indent=2)
+
 
 def cc(ip_addr, asn):
     '''
@@ -160,7 +163,9 @@ def facts(num_bad_paths, num_unique_destinations):
     with open(OUTPUT_DIR + "/facts.txt", "wb") as f:
         pct_bad_paths = 1.0 * num_bad_paths / len(PATHS)
         pct = round(pct_bad_paths, 2)
-        f.write("{}/{} paths departed NZ ({}%)\n".format(num_bad_paths, len(PATHS), pct))
+        f.write("{}/{} paths departed {} ({}%)\n".format(num_bad_paths,
+                                                        len(PATHS),
+                                                         dest_cc, pct))
         f.write("Hops went to {} unique IPs.".format(num_unique_destinations))
 
 def main():
