@@ -64,6 +64,28 @@ addresses are not mappable to their origin AS as they are for transit and not an
 in the BGP table. This code does some effort to map as much as possible, and 
 to handle border cases in a sensible way.
 
+## NEW: IXP Country Jedi export
+
+A new feature added that allows to export the measurements,
+probe info and other elements to IXP Country Jedi to run their analysis.
+
+```
+python2 export-to-ixp-jedi.py --datadir ${DATADIR} --exportdir ${IXP_JEDI_DATA_DIR}
+```
+
+The script will write a *config.json*, *probeset.json*,
+*measurementset.json* and *basedata.json* that are suitable
+for bootstrap analysis. Once the files have been exported, to run IXP Jedi you will need to
+
+```
+cd ${IXP_JEDI_DATA_DIR}
+python2 ../prepare.py
+python2 ../get-ips.py
+python2 ../get-measurements.py
+python2 ../analyze-results.py
+```
+The measurements step is not executed, as it has been done already by this code.
+
 ## Acknowledgements
 
 This work has been developed in parallel with [IXP Country Jedi]
