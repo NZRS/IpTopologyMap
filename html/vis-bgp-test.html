@@ -82,7 +82,9 @@
                     <li>To the Top 100 popular websites in <span
                             class="country"></span> according to Alexa</li>
                 </li></ul>
-            <li>IP addresses mapped to ASN using MaxMind GeoIP database. AS Path derived from IP Path using custom code.</li>
+            <li>IP addresses mapped to ASN using MaxMind GeoIP database. AS
+        Path derived from IP Path using custom
+        <a href="https://github.com/NZRS/IpTopologyMap">code</a></li>
             <li>Country and names for each AS fetched from Team Cymru <a href="http://www.team-cymru.org/IP-ASN-mapping.html">database</a></li>
         </li>
         </p>
@@ -92,13 +94,19 @@
             <li>Blue: <span id="PriCountry"></span></li>
             <li>Yellow: <span id="SecCountry"></span></li>
             <li>Red: IXs</li>
-            <li>Orange: Tier1 AS (according to CAIDA)</li>
+            <li>Orange: Tier1 AS (according to <a
+                    href="http://www.caida.org/data/as-relationships/">CAIDA</a>)</li>
             <li>Green: Other Countries ASNs</li>
 
         </p>
 
         <div id="metadata"><h3>Metadata</h3>
             <span id="metadata_text"></span></div>
+        <div class="map-ui">
+            <h3>Node Search</h3>
+            <label for="node-search">Node Search: </label>
+            <input id="node-search"/>
+        </div>
         <div id="console"><h3>Information</h3><span id="info_window"/></div>
     </div>
     <div id="ipvis"></div>
@@ -107,6 +115,11 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/vis/4.16.1/vis.min.js"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/vis/4.16.1/vis.min.css" rel="stylesheet" type="text/css" />
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script>
+    <link rel="stylesheet" type="text/css"
+          href="https://cdnjs.cloudflare.com/ajax/libs/jqueryui/1.11.4/jquery-ui.css"/>
+    <script
+            src="https://cdnjs.cloudflare.com/ajax/libs/jqueryui/1.11.4/jquery-ui.js">
+    </script>
 
     <script type="text/javascript">
         var network;
@@ -117,6 +130,7 @@
         $.getJSON(datafile, function(data, status) {
             var nodes = [];
             var edges = [];
+            var node_names = [];
             var vis_nodes, vis_edges;
             var metadata;
 
@@ -130,6 +144,10 @@
                     'value': entry.value,
                     'x': entry.x_pos,
                     'y': entry.y_pos
+                });
+                node_names.push({
+                    'label': entry.label + "(" + entry.ASN + ")",
+                    'value': entry.id
                 });
             });
 
@@ -242,10 +260,12 @@
                 network = new vis.Network(container, data, options);
                 allNodes = vis_nodes.get({returnType: 'Object'});
                 allEdges = vis_edges.get({returnType: 'Object'});
-                // Do this to save the location of nodes in the network once the
-                // physics simulation finishes
-                network.on('stabilized', function() { network.storePositions(); });
+
+                // Handle the neighbour highlighting
                 network.on('click', neighbourHighlight);
+
+                // Fit the network to the viewport
+                network.fit();
 
                 // Display the metadata
                 document.getElementById('metadata_text').innerHTML = "Updated on: " +
@@ -263,6 +283,32 @@
                 for (cc_idx in cc_labels) {
                     cc_labels[cc_idx].innerHTML = metadata['PriCountry'];
                 }
+
+                // Enable the node search
+                $('#node-search').autocomplete({
+                    source: node_names,
+                    change: function(event, ui) {
+                        $('#node-search').val('');
+                        return false;
+                    },
+                    select: function(event, ui) {
+                        network.fit({
+                            nodes: [ui.item.value],
+                            animation: {
+                                duration: 200
+                            }
+                        });
+                        // Set the menu with the label of the node selected
+                        $('#node-search').val(ui.item.label);
+                        // Clear any highlight if present
+                        neighbourHighlight({nodes: [], edges: []});
+                        // Highlight the selected node
+                        neighbourHighlight({nodes: [ui.item.value],
+                                            network: network});
+                        this.value = '';
+                        return false;
+                    }
+                });
             }
 
             function neighbourHighlight(params) {
@@ -313,6 +359,10 @@
                   if (allNodes[selectedNode].hiddenLabel !== undefined) {
                     allNodes[selectedNode].label = allNodes[selectedNode].hiddenLabel;
                     allNodes[selectedNode].hiddenLabel = undefined;
+                  }
+
+                  if (params.hasOwnProperty('network')) {
+                      params.network.selectNodes([selectedNode], true);
                   }
 
                   // Provide some information about the node
