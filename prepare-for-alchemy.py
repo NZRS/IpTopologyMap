@@ -1,6 +1,6 @@
 import json
 import igraph
-from collections import defaultdict
+from collections import defaultdict, OrderedDict
 from networkx.readwrite import json_graph
 from time import strftime, localtime
 from asn_name_lookup import AsnNameLookupService
@@ -12,6 +12,10 @@ import pycountry
 
 __author__ = 'secastro'
 
+
+def dpath(fname):
+    return os.path.join(args.datadir, fname)
+
 parser = argparse.ArgumentParser("Prepare graph file for visualization")
 parser.add_argument('--datadir', required=True, help="directory to read input and save output")
 args = parser.parse_args()
@@ -22,7 +26,13 @@ with open(os.path.join(args.datadir, 'config.json')) as f:
 
 countries = set(config['PrimaryCountry'] + config['SecondaryCountry'] + ['IX'])
 
-with open("{}/bgp.json".format(args.datadir), 'rb') as bgp_file:
+# Read the list of IP Paths to generate a simplified version for
+# visualization/exploration
+with open(dpath('ip-path.json')) as f:
+    ip_path = json.load(f)
+
+
+with open(dpath("bgp.json"), 'rb') as bgp_file:
     map_data = json.load(bgp_file)
     bgp_map = json_graph.node_link_graph(map_data)
 
@@ -38,11 +48,11 @@ with open('data/base-as-info.json', 'rb') as base_as_info_file:
     base_info = json.load(base_as_info_file)
     as_info.update(base_info)
 
-with open(os.path.join(args.datadir, 'collected-as-info.json')) as f:
+with open(dpath('collected-as-info.json')) as f:
     collected_info = json.load(f)
     as_info.update(collected_info)
 
-with open(os.path.join(args.datadir, 'as-info.pre.json'), 'wb') as as_file:
+with open(dpath('as-info.pre.json'), 'wb') as as_file:
     json.dump(as_info, as_file, indent=2, sort_keys=True)
 
 # TODO: Exclude from the list of lookups ASNs for which we do have
@@ -60,7 +70,7 @@ as_lookup_info = s.lookup_many(ases_to_look)
 as_info.update(as_lookup_info)
 
 # Save the collected AS info if needed for inspecting
-with open(os.path.join(args.datadir, 'as-info.json'), 'wb') as as_file:
+with open(dpath('as-info.json'), 'wb') as as_file:
     json.dump(as_info, as_file, indent=2, sort_keys=True)
 
 # AS Relationship data from CAIDA
@@ -148,12 +158,13 @@ json_dump['lastupdate'] = strftime("%B %d, %Y", localtime())
 del json_dump['links']
 
 
-with open("{}/bgp.alchemy.json".format(args.datadir), 'wb') as alchemy_file:
+with open(dpath("bgp.alchemy.json"), 'wb') as alchemy_file:
     json.dump(json_dump, alchemy_file)
 
 
 # Save a version of the BGP map for VisJS
-with open(os.path.join(args.datadir, 'vis-bgp-graph.js'), 'wb') as vis_file:
+with open(dpath('vis-bgp-graph.js'), 'wb') as vis_file,\
+        open(dpath('vis-bgp-graph.json'), 'wb') as json_file:
     bgp_nodes = {}
     for n in json_dump['nodes']:
         bgp_nodes[n['id']] = {'label': n['name'],
@@ -184,12 +195,34 @@ with open(os.path.join(args.datadir, 'vis-bgp-graph.js'), 'wb') as vis_file:
                      'country': v['country'],
                      'ASN': v['ASN'],
                      'value': v['degree']} for n, v in bgp_nodes.iteritems()]
-    vis_file.write("var nodes = {};\n".format(json.dumps(nodes_export)))
-    vis_file.write("var edges = {};\n".format(json.dumps(bgp_edges)))
-    vis_file.write("var metadata = {};\n".format(json.dumps(bgp_map.graph['metadata'])))
+    vis_file.write("var nodes = %s;\n" % json.dumps(nodes_export))
+    vis_file.write("var edges = %s;\n" % json.dumps(bgp_edges))
+    vis_file.write("var metadata = %s;\n" % json.dumps(bgp_map.graph[
+                                                               'metadata']))
 
-# Generate the same data but exported in JSON format
-with open(os.path.join(args.datadir, 'vis-bgp-graph.json'), 'wb') as json_file:
+    # Translate the Path Summary to use the ASN sequences above rather than
+    # the ASN
+    path_summary = defaultdict(lambda: defaultdict(list))
+    for ip_seg in ip_path:
+        path_seq = ip_seg['path']
+
+        # From a sequence, get the first and the last hop to generate the name
+        asn_seq = OrderedDict([(int(p['asn']), 0) for p in path_seq])
+        p_src = "%s (%s)" % (path_seq[0]['addr'], as_info[path_seq[0][
+            'asn']]['short_descr'])
+        p_dst = "%s (%s" % (path_seq[-1]['addr'], as_info[path_seq[-1][
+            'asn']]['short_descr'])
+        path_summary[p_src][p_dst] = [node_idx[k] for k in asn_seq.keys()]
+
+    # Sorted dump of path_summary
+    sorted_path = OrderedDict((k1,
+                               OrderedDict((k2,
+                                            path_summary[k1][k2])
+                                           for k2 in sorted(path_summary[k1].keys())))
+                              for k1 in sorted(path_summary.keys()))
+    # Generate the same data but exported in JSON format
     json.dump({'metadata': bgp_map.graph['metadata'],
                'nodes': nodes_export,
-               'edges': bgp_edges}, json_file)
+               'edges': bgp_edges,
+               'path-summary': sorted_path}, json_file)
+

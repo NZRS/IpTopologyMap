@@ -62,6 +62,12 @@
 	li:before {
 	    padding-right: 3px;
     }
+    .path_entry {
+        width: 90%;
+    }
+    .path_label {
+        width: 20%;
+    }
     </style>
 </head>
 <body>
@@ -107,6 +113,19 @@
             <label for="node-search">Node Search: </label>
             <input id="node-search"/>
         </div>
+        <div id="light-path">
+            <h3>Path Exploration</h3>
+            <div class="path_entry">
+                <label class="path_label" for="path_s">Start: </label>
+                <select name="path_start" id="path_s">
+                    <option disabled selected>Pick Start</option>
+                </select>
+            </div>
+            <div class="path_entry">
+                <label class="path_label" for="path_e">End: </label>
+                <select name="path_end" id="path_e"></select>
+            </div>
+        </div>
         <div id="console"><h3>Information</h3><span id="info_window"/></div>
     </div>
     <div id="ipvis"></div>
@@ -132,7 +151,7 @@
             var edges = [];
             var node_names = [];
             var vis_nodes, vis_edges;
-            var metadata;
+            var metadata, path_sel;
 
             $.each(data['nodes'], function (i, entry) {
                 nodes.push({
@@ -161,6 +180,7 @@
             });
 
             metadata = data['metadata'];
+            path_sel = data['path-summary'];
 
             redrawAll();
 
@@ -309,15 +329,120 @@
                         return false;
                     }
                 });
+
+                // Enable the path search
+                for (src in path_sel) {
+                    $('#path_s').append($('<option>').attr('value', src).text(src));
+                }
+                $("#path_s").change(function() {
+                    src = $(this).val();
+                    // Clear any existing option
+                    $('#path_e').find('option').remove().end();
+                    // Add a placeholder
+                    $('#path_e').append($('<option>')
+                        .attr('disabled', 'disabled')
+                        .attr('selected', 'selected')
+                        .text('Pick End'));
+                    for (var dst in path_sel[src]) {
+                        // Add the corresponding options
+                        $('#path_e').append($('<option>').attr('value', dst).text(dst));
+                    }
+                    // Add the event handler
+                    $('#path_e').change(function() {
+                        src = $('#path_s').val();
+                        dst = $(this).val();
+                        p_nodes = path_sel[src][dst];
+                        p_edges = [];
+                        // console.log("From: " + src + " To: " + dst);
+                        // Find the right edges
+                        for (i = 0; i < p_nodes.length-1; i++) {
+                            // console.log("Node: " + p_nodes[i]);
+                            // console.log("Next Node: " + p_nodes[i+1]);
+                            // Find all the edges from this node
+                            c_edges = network.getConnectedEdges(p_nodes[i]);
+                            // console.log("Edges: " + c_edges);
+                            for (j = 0; j < c_edges.length; j++) {
+                                c_nodes = network.getConnectedNodes(c_edges[j])
+                                // console.log("Edge " + c_edges[j] + " connects " + c_nodes);
+                                if (c_nodes.indexOf(p_nodes[i+1]) != -1) {
+                                    // console.log("Nodes: " + c_nodes + " Edge: " + c_edges[j]);
+                                    p_edges.push(c_edges[j]);
+                                    break;
+                                }
+                            }
+
+                        }
+                        // Highlight the nodes and edges in the path
+                        pathHighlight({
+                            nodes: p_nodes,
+                            edges: p_edges,
+                            network: network});
+                    });
+                });
             }
+
+            function pathHighlight(params) {
+                // Get a sequence of nodes and edges to highlight
+                if (params.nodes.length > 0) {
+                    highlightActive = true;
+
+                    // mark all nodes as hard to read.
+                    for (var nodeId in allNodes) {
+                        allNodes[nodeId].color = 'rgba(100,100,100,0.5)';
+                        if (allNodes[nodeId].hiddenLabel === undefined) {
+                            allNodes[nodeId].hiddenLabel = allNodes[nodeId].label;
+                            allNodes[nodeId].label = undefined;
+                        }
+                    }
+
+                    // Give the provided nodes their colors back
+                    for (i = 0; i < params.nodes.length; i++) {
+                        var node_idx = params.nodes[i];
+                        allNodes[node_idx].color = undefined;
+                        if (allNodes[node_idx].hiddenLabel !== undefined) {
+                            allNodes[node_idx].label = allNodes[node_idx].hiddenLabel;
+                            allNodes[node_idx].hiddenLabel = undefined;
+                        }
+                    }
+
+                    // Highlight the nodes
+                    if (params.hasOwnProperty('network')) {
+                        params.network.selectNodes(params.nodes, false);
+                        params.network.selectEdges(params.edges);
+                    }
+                }
+                else if (highlightActive === true) {
+                    // reset all nodes
+                    for (var nodeId in allNodes) {
+                        allNodes[nodeId].color = undefined;
+                        if (allNodes[nodeId].hiddenLabel !== undefined) {
+                          allNodes[nodeId].label = allNodes[nodeId].hiddenLabel;
+                          allNodes[nodeId].hiddenLabel = undefined;
+                        }
+                    }
+                    highlightActive = false
+                }
+
+                // transform the object into an array
+                var updateArray = [];
+                for (nodeId in allNodes) {
+                  if (allNodes.hasOwnProperty(nodeId)) {
+                    updateArray.push(allNodes[nodeId]);
+                  }
+                }
+                vis_nodes.update(updateArray);
+            }
+
 
             function neighbourHighlight(params) {
                 // Click on an edge
                 if (params.nodes.length == 0 && params.edges.length > 0) {
                     var selectedEdge = params.edges[0]
                     hl_edge = true;
-                    document.getElementById('info_window').innerHTML = "<b>IP addresses for this edge:<b/><br/>" +
-                        allEdges[selectedEdge]['pairs'].join("<br/>");
+                    if (allEdges[selectedEdge].hasOwnProperty('pairs')) {
+                        $('#info_window').html("<b>IP addresses for this edge:<b/><br/>" +
+                            allEdges[selectedEdge]['pairs'].join("<br/>"));
+                    }
                 }
                 // Click on a node
                 else if (params.nodes.length > 0) {

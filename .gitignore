@@ -7,3 +7,5 @@ read-key.txt
 bower_components/
 # Data from RIRs
 RIR/delegated-*
+# Temporary file to run physics simulation
+physics.html
